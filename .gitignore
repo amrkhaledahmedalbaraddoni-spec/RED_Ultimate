@@ -1,0 +1,28 @@
+﻿# Android / Gradle generated files
+.gradle/
+build/
+**/build/
+
+# Android Studio
+.idea/
+*.iml
+
+# Local machine configuration
+local.properties
+
+# Sensitive signing credentials
+*.jks
+*.keystore
+key.properties
+
+# Windows / macOS
+Thumbs.db
+.DS_Store
+
+# Kotlin / Gradle temporary files
+.kotlin/
+**/.kotlin/
+
+# Kotlin / Gradle temporary files
+.kotlin/
+**/.kotlin/

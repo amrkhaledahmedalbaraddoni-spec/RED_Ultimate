@@ -1,0 +1,6 @@
+- `[x]` Identify and clear stale Kotlin daemon files and processes
+- `[x]` Verify initial Kotlin daemon connectivity
+- `[/]` Finalize `gradle.properties` for stable Kotlin daemon execution
+- `[ ]` Address dependency verification failures observed during build
+- `[ ]` Verify full project build/sync
+- `[ ]` Create walkthrough
