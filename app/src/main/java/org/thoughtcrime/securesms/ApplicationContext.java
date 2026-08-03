@@ -171,7 +171,7 @@ public class ApplicationContext extends Application implements AppForegroundObse
     SignalLocalMetrics.ColdStart.start();
 
     // RED Master Initialization
-    org.thoughtcrime.securesms.developed.REDCore.INSTANCE.initializeEverything();
+    org.thoughtcrime.securesms.developed.REDCore.INSTANCE.initializeEverything(this);
 
     long startTime = System.currentTimeMillis();
 

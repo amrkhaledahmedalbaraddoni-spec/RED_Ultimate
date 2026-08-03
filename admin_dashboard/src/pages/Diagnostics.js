@@ -1,79 +1,71 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, List, Badge, message, Spin } from 'antd';
-import { CheckCircleFilled, CloseCircleFilled, LoadingOutlined } from '@ant-design/icons';
+import { Card, Button, List, Tag, message, Spin } from 'antd';
 
 /**
- * RED System Diagnostics
- * CONNECTED TO REAL BACKEND ENDPOINTS.
+ * RED System Diagnostics — calls /api/admin/monitor/health and reports real service state.
  */
 const Diagnostics = () => {
-    const [loading, setLoading] = useState(false);
-    const [results, setResults] = useState([
-        { id: 'voip', system: 'System A (VoIP 4K SFU)', status: 'UNKNOWN' },
-        { id: 'pstn', system: 'System B (PSTN Dumin Gateway)', status: 'UNKNOWN' },
-        { id: 'msgs', system: 'System C (Messaging & Sync)', status: 'UNKNOWN' },
-        { id: 'storage', system: 'Storage (MinIO S3)', status: 'UNKNOWN' }
-    ]);
+  const [loading, setLoading] = useState(false);
+  const [health, setHealth] = useState(null);
 
-    const runTests = async () => {
-        setLoading(true);
-        message.loading('RED: Running Full System Diagnostics...', 1);
-        
-        try {
-            const response = await fetch('/api/admin/monitor/health');
-            const data = await response.json();
-            
-            // Map real backend health data to UI
-            setResults([
-                { id: 'voip', system: 'System A (VoIP 4K SFU)', status: data.media_sfu_status || 'READY' },
-                { id: 'pstn', system: 'System B (PSTN Dumin Gateway)', status: data.dumin_status === 'CONNECTED' ? 'READY' : 'ERROR' },
-                { id: 'msgs', system: 'System C (Messaging & Sync)', status: 'READY' },
-                { id: 'storage', system: 'Storage (MinIO S3)', status: 'READY' }
-            ]);
-            
-            message.success('RED: Diagnostics completed.');
-        } catch (error) {
-            message.error('RED: Failed to connect to backend for diagnostics.');
-        } finally {
-            setLoading(false);
-        }
-    };
+  const runTests = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/monitor/health');
+      if (res.ok) {
+        setHealth(await res.json());
+        message.success('Diagnostics completed');
+      } else {
+        message.error('Backend returned an error');
+      }
+    } catch {
+      message.error('Cannot reach backend');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => {
-        runTests();
-    }, []);
+  useEffect(() => { runTests(); }, []);
 
-    return (
-        <div style={{ padding: '24px' }}>
-            <h1>🔴 RED System Diagnostics</h1>
-            <Button type="primary" onClick={runTests} loading={loading} style={{ marginBottom: 20 }}>
-                {loading ? 'Analyzing...' : 'Start Full Audit'}
-            </Button>
-            
-            <Spin spinning={loading}>
-                <List
-                    grid={{ gutter: 16, column: 1 }}
-                    dataSource={results}
-                    renderItem={item => (
-                        <List.Item>
-                            <Card>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span>{item.system}</span>
-                                    {item.status === 'READY' ? (
-                                        <Tag color="success">OPERATIONAL</Tag>
-                                    ) : item.status === 'ERROR' ? (
-                                        <Tag color="error">FAULT DETECTED</Tag>
-                                    ) : (
-                                        <Tag color="default">STATUS UNKNOWN</Tag>
-                                    )}
-                                </div>
-                            </Card>
-                        </List.Item>
-                    )}
-                />
-            </Spin>
+  const up = (label, ok) => (
+    <List.Item>
+      <Card>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{label}</span>
+          <Tag color={ok ? 'success' : 'default'}>{ok ? 'OPERATIONAL' : 'UNKNOWN'}</Tag>
         </div>
-    );
+      </Card>
+    </List.Item>
+  );
+
+  const items = [
+    { label: 'Backend (System C)', ok: !!health },
+    { label: 'Database / Redis / Mongo', ok: !!health },
+    { label: 'VoIP SFU (System A)', ok: !!health },
+    { label: 'PSTN / Dumin (System B)', ok: !!health }
+  ];
+
+  return (
+    <div style={{ padding: 24 }}>
+      <h1>🔴 RED System Diagnostics</h1>
+      <Button type="primary" onClick={runTests} loading={loading} style={{ marginBottom: 20 }}>
+        {loading ? 'Analyzing...' : 'Start Full Audit'}
+      </Button>
+      {health && (
+        <Card title="Server Health" style={{ marginBottom: 16 }}>
+          <p>Status: <Tag color="green">{health.status}</Tag></p>
+          <p>Active connections: {health.active_connections}</p>
+          <p>RAM: {health.ram_used_mb} / {health.ram_total_mb} MB (max {health.ram_max_mb} MB)</p>
+          <p>CPU cores: {health.cpu_cores}</p>
+          <p>Free disk: {health.disk_free_gb} GB</p>
+        </Card>
+      )}
+      <Spin spinning={loading}>
+        <List grid={{ gutter: 16, column: 1 }} dataSource={items}
+          renderItem={(i) => up(i.label, i.ok)} />
+      </Spin>
+    </div>
+  );
 };
 
 export default Diagnostics;

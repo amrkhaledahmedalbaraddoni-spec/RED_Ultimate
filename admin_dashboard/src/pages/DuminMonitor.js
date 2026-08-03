@@ -1,47 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Progress, Statistic, Row, Col, Tag, Button } from 'antd';
-import { SignalFilled, MobileOutlined, ThunderboltFilled } from '@ant-design/icons';
+import { Card, Row, Col, Tag, Button, message } from 'antd';
 
 const DuminMonitor = () => {
-    const [duminState, setDuminState] = useState({
-        simStatus: 'Active',
-        signal: 85,
-        balance: '120.50',
-        operator: 'GSM-Global',
-        temp: 38
-    });
+  const [status, setStatus] = useState(null);
 
-    return (
-        <div style={{ padding: '24px' }}>
-            <h1>PSTN / Dumin Hardware Monitor</h1>
-            <Row gutter={16}>
-                <Col span={8}>
-                    <Card>
-                        <Statistic title="SIM Status" value={duminState.simStatus} prefix={<MobileOutlined />} 
-                            valueStyle={{ color: '#3f51b5' }} />
-                        <Tag color="green" style={{ marginTop: 8 }}>ONLINE</Tag>
-                    </Card>
-                </Col>
-                <Col span={8}>
-                    <Card>
-                        <Statistic title="Signal Strength" value={duminState.signal} suffix="/ 100" prefix={<SignalFilled />} />
-                        <Progress percent={duminState.signal} status="active" strokeColor="#f57c00" />
-                    </Card>
-                </Col>
-                <Col span={8}>
-                    <Card>
-                        <Statistic title="SIM Balance" value={duminState.balance} precision={2} prefix="$" />
-                        <Button type="primary" size="small" style={{ marginTop: 8 }}>Recharge Now</Button>
-                    </Card>
-                </Col>
-            </Row>
-            <Card title="Hardware Health" style={{ marginTop: 24 }}>
-                <p>Temperature: {duminState.temp}°C <Tag color="orange">Normal</Tag></p>
-                <p>Uptime: 14 days, 5 hours, 22 minutes</p>
-                <Button danger>Restart Dumin Hardware</Button>
-            </Card>
-        </div>
-    );
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch('/api/pstn/sim');
+      if (res.ok) setStatus(await res.json());
+    } catch {
+      /* ignore */
+    }
+  };
+
+  useEffect(() => { fetchStatus(); const i = setInterval(fetchStatus, 5000); return () => clearInterval(i); }, []);
+
+  const reachable = status && status.status !== 'UNREACHABLE';
+
+  return (
+    <div style={{ padding: 24 }}>
+      <h1>PSTN / Dumin Hardware Monitor</h1>
+      <Row gutter={16}>
+        <Col span={12}>
+          <Card title="Gateway">
+            <p>Reachability: {reachable
+              ? <Tag color="green">ONLINE</Tag>
+              : <Tag color="red">OFFLINE</Tag>}</p>
+            <p>Raw status: {JSON.stringify(status)}</p>
+            <Button onClick={() => { fetchStatus(); message.info('Refreshed'); }}>Refresh</Button>
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  );
 };
 
 export default DuminMonitor;

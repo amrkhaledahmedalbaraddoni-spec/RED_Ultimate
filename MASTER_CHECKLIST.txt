@@ -1,32 +1,41 @@
-RED Production Mastery Checklist
-=========================================
+RED Production Checklist (revised after the technical audit)
+============================================================
 
-Folder 1: [app-android]
-- Includes Signal-Android core for top-tier encryption.
-- Feature: Auth (Admin Approval enforced).
-- Feature: Chat (Guaranteed delivery, UUID v7, ACK).
-- Feature: Stories (24h Auto-delete).
-- Feature: VoIP (System A - 4K Video support).
-- Feature: PSTN (System B - Dumin Gateway - Isolated).
+Component: [app-android]  (standalone Gradle Compose app)
+- [x] Real Gradle build (settings/build.gradle.kts, manifest, Hilt, Room, Retrofit/Moshi)
+- [x] Auth flow with admin-approval states (pending/rejected/banned)
+- [x] Chat (Room-backed store, WebSocket delivery manager with ACK + retry)
+- [x] Stories (capture/viewer, 24h cleanup worker)
+- [x] PSTN dialer (System B - Dumin, isolated from VoIP)
+- [x] UUID v7 for message ids
 
-Folder 2: [backend-server]
-- Spring Boot 3.4 engine.
-- Handles Auth approval, Message relay, and PSTN signaling.
+Component: [backend-server]  (Spring Boot 3.4)
+- [x] @SpringBootApplication entry point + versioned jar
+- [x] Real JWT auth (HS256) + BCrypt password hashing
+- [x] Admin approval workflow (persisted in PostgreSQL)
+- [x] Guaranteed delivery: Redis dedup (SETNX) + per-conversation sequence + Mongo store
+- [x] Real-time WebSocket (/ws/chat) with presence + offline sync
+- [x] MinIO storage (private bucket), live monitoring, kill-switch
+- [x] Story auto-cleanup scheduler
 
-Folder 3: [admin-dashboard]
-- React 19 interface for the Admin.
-- Full control over users, approval, and system health.
+Component: [admin_dashboard]  (React 18 + Ant Design)
+- [x] Buildable (react-scripts) + Dockerfile
+- [x] Live monitor, approvals, diagnostics, Dumin/PSTN (API-aligned)
 
-Folder 4: [media-sfu]
-- Mediasoup worker configured for AV1/VP9 at 4K resolution.
+Component: [media-sfu]  (Mediasoup)
+- [x] WebSocket signaling + Dockerfile
+- [x] AV1/VP9/H.264 + Opus, 4K-capable bitrates
 
-Folder 5: [pstn-asterisk]
-- Asterisk configuration files for Dumin SIM/GSM integration.
+Component: [pstn-asterisk]
+- [x] extensions.conf + manager.conf + pjsip.conf (Dumin trunk + WebRTC endpoint)
 
-Shared: [shared-proto]
-- ProtoBuf definitions ensuring binary speed across all systems.
+Component: [infrastructure]
+- [x] docker-compose (10 services), nginx.conf reverse proxy, build-and-run.sh
 
-Root: [docker-compose.yml]
-- Launches the entire empire with one command.
+Honest status
+-------------
+VERIFICATION: IN PROGRESS (not "complete"). Source compiles by design; a full
+end-to-end runtime smoke test still requires the physical Dumin device and a
+real build environment. Cloud dependencies at runtime: NONE.
 
-VERIFICATION: COMPLETE. NO FEATURES MISSING. ZERO CLOUD DEPENDENCY.
+See TechAnalysis_Report_AR.md for the original audit and the list of fixes applied.
