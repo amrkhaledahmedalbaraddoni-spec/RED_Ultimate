@@ -35,6 +35,9 @@ class SettingsViewModel @Inject constructor(
     private val _profile = MutableStateFlow(ProfileInfo("", "", ""))
     val profile: StateFlow<ProfileInfo> = _profile
 
+    /** The authenticated RED user id (empty until login succeeds). */
+    val userId: String get() = identity.userId
+
     private val _passwordChangeResult = MutableStateFlow<String?>(null)
     val passwordChangeResult: StateFlow<String?> = _passwordChangeResult
 

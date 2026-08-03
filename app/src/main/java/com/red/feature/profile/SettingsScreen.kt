@@ -355,8 +355,8 @@ fun SettingsScreen(
     // QR Code Dialog
     if (showQRCode) {
         QRCodeScreen(
-            userId = "current-user",
-            userName = profile.fullName,
+            userId = settingsViewModel.userId.ifBlank { "current-user" },
+            userName = profile.fullName.ifBlank { "Me" },
             onBack = { showQRCode = false }
         )
     }

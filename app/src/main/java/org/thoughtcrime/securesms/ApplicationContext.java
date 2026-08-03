@@ -24,8 +24,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
-import androidx.hilt.work.HiltWorkerFactory;
-import androidx.work.Configuration;
 
 import com.bumptech.glide.Glide;
 import com.google.android.gms.security.ProviderInstaller;
@@ -147,8 +145,6 @@ import io.reactivex.rxjava3.exceptions.OnErrorNotImplementedException;
 import io.reactivex.rxjava3.exceptions.UndeliverableException;
 import io.reactivex.rxjava3.plugins.RxJavaPlugins;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import dagger.hilt.android.HiltAndroidApp;
-import javax.inject.Inject;
 import kotlin.Unit;
 import rxdogtag2.RxDogTag;
 
@@ -159,25 +155,19 @@ import rxdogtag2.RxDogTag;
  * to initialize the job manager, and to check for GCM registration freshness.
  *
  * @author Moxie Marlinspike
+ *
+ * Note: Hilt wiring (@HiltAndroidApp, @Inject fields, Configuration.Provider) lives in
+ * {@link com.red.RedHiltApplication} (Kotlin). AGP 9's built-in Kotlin support makes kapt
+ * unavailable and Hilt's KSP processor only processes Kotlin sources, so a Java class cannot
+ * host the Hilt annotations. RedHiltApplication extends this class, so all Signal
+ * initialization below runs unchanged as part of the same Application hierarchy.
  */
-@HiltAndroidApp
-public class ApplicationContext extends Application implements AppForegroundObserver.Listener, Configuration.Provider {
+public class ApplicationContext extends Application implements AppForegroundObserver.Listener {
 
   private static final String TAG = Log.tag(ApplicationContext.class);
 
-  /** Hilt bridges the merged RED workers into the existing Signal application. */
-  @Inject HiltWorkerFactory redWorkerFactory;
-  @Inject com.red.core.security.SessionManager redSessionManager;
-
   public static ApplicationContext getInstance(Context context) {
     return (ApplicationContext) context.getApplicationContext();
-  }
-
-  @Override
-  public Configuration getWorkManagerConfiguration() {
-    return new Configuration.Builder()
-        .setWorkerFactory(redWorkerFactory)
-        .build();
   }
 
   @Override
@@ -288,7 +278,6 @@ public class ApplicationContext extends Application implements AppForegroundObse
     try {
       com.red.core.delivery.NotificationHelper.createChannels(this);
       com.red.core.workers.StoryCleanupWorker.enqueue(this);
-      redSessionManager.getEncryptionKey();
     } catch (Throwable t) {
       // RED services must never prevent the Signal client from starting. The individual
       // feature surfaces will retry their own initialization when opened.
