@@ -75,4 +75,21 @@ class AuthController(
           ?: return StatusResponse(UserStatus.PENDING)
     return StatusResponse(user.status)
   }
+
+  data class ChangePasswordRequest(
+    @field:NotBlank val currentPassword: String,
+    @field:NotBlank @field:Size(min = 8) val newPassword: String
+  )
+
+  @PostMapping("/change-password")
+  fun changePassword(authentication: Authentication, @Valid @RequestBody req: ChangePasswordRequest): ResponseEntity<Any> {
+    val user = userRepository.findById(authentication.name).orElse(null)
+      ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+    if (!passwordEncoder.matches(req.currentPassword, user.passwordHash)) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("error" to "Current password is incorrect"))
+    }
+    user.passwordHash = passwordEncoder.encode(req.newPassword)
+    userRepository.save(user)
+    return ResponseEntity.ok(mapOf("message" to "Password changed successfully"))
+  }
 }

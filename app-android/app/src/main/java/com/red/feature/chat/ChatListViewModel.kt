@@ -3,6 +3,7 @@ package com.red.feature.chat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.red.core.delivery.ClientIdentity
+import com.red.core.models.PublicUserDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,6 +29,9 @@ class ChatListViewModel @Inject constructor(
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
 
+    private val _searchResults = MutableStateFlow<List<PublicUserDto>>(emptyList())
+    val searchResults: StateFlow<List<PublicUserDto>> = _searchResults
+
     fun load() {
         viewModelScope.launch {
             _loading.value = true
@@ -46,5 +50,20 @@ class ChatListViewModel @Inject constructor(
             } catch (_: Exception) { }
             _loading.value = false
         }
+    }
+
+    fun searchUsers(query: String) {
+        viewModelScope.launch {
+            try {
+                val response = chatApi.searchUsers(query)
+                if (response.isSuccessful) {
+                    _searchResults.value = response.body() ?: emptyList()
+                }
+            } catch (_: Exception) { }
+        }
+    }
+
+    fun clearSearch() {
+        _searchResults.value = emptyList()
     }
 }

@@ -31,3 +31,14 @@ data class PublicUserDto(
     val fullName: String,
     val status: UserStatus
 )
+
+@JsonClass(generateAdapter = true)
+data class UserView(
+    val id: String,
+    val email: String,
+    val fullName: String,
+    val status: UserStatus,
+    val role: String,
+    val phoneNumber: String? = null,
+    val createdAt: Long = 0
+)

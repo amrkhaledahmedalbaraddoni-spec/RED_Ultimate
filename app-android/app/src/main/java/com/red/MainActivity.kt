@@ -39,6 +39,7 @@ import com.red.feature.pstn.DialPadScreen
 import com.red.feature.stories.StoryListScreen
 import com.red.feature.stories.StoryViewModel
 import com.red.feature.stories.CameraCaptureScreen
+import com.red.feature.stories.StoryViewerScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -84,7 +85,7 @@ private fun MainScreen() {
     NavHost(navController, startDestination = Screen.Chats.route, Modifier.padding(padding)) {
       composable(Screen.Chats.route) { ChatListScreen(navController) }
       composable(Screen.Stories.route) { StoryListScreen(navController) }
-      composable(Screen.Calls.route) { CallLogScreen() }
+      composable(Screen.Calls.route) { CallLogScreen(onCallClick = { number -> navController.navigate("pstn_call/$number") }) }
       composable(Screen.Phone.route) { DialPadScreen(onDial = { navController.navigate("pstn_call/$it") }) }
       composable(Screen.Settings.route) { SettingsScreen() }
       composable("chat_detail/{chatId}") { entry ->
@@ -101,6 +102,10 @@ private fun MainScreen() {
           storyVm.publish(uri)
           navController.popBackStack()
         })
+      }
+      composable("story_viewer/{urls}") { entry ->
+        val urls = entry.arguments?.getString("urls")?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
+        StoryViewerScreen(stories = urls, onAllStoriesViewed = { navController.popBackStack() })
       }
     }
   }

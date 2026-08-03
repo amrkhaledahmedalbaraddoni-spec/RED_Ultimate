@@ -1,26 +1,26 @@
 @echo off
-REM ── RED Ultimate — Build script for Windows with Arabic locale fix ──
-REM
-REM This script sets the Java locale to English before building,
-REM which prevents Android resource directory names from using
-REM Arabic-Indic digits (e.g. values-sw٣٦٠dp → values-sw360dp).
-REM
-REM Usage:  build-windows.bat            (debug build)
-REM         build-windows.bat release    (release build)
+REM ============================================================
+REM  RED Ultimate — Windows Build Script
+REM  Fixes Arabic locale issues on Windows (Arabic-Indic digits
+REM  in resource directory names, stale Wire code, dependency
+REM  verification).
+REM ============================================================
 
-setlocal
-
-REM Force English locale for all Java processes
-set JAVA_TOOL_OPTIONS=-Duser.language=en -Duser.country=US
-
-echo ========================================
-echo  RED Ultimate - Windows Build
-echo  Locale: %JAVA_TOOL_OPTIONS%
-echo ========================================
+echo.
+echo  ========================================
+echo   RED Ultimate - Windows Build Script
+echo  ========================================
 echo.
 
-REM Clean previous build artifacts (fixes stale generated code)
-echo [1/3] Cleaning previous build...
+REM Force English locale for the JVM (prevents Arabic-Indic digits
+REM like ٣٦٠ in resource directory names like values-sw360dp)
+set JAVA_TOOL_OPTIONS=-Duser.language=en -Duser.country=US
+
+echo [1/3] Setting locale to English (prevents Arabic-Indic digit issues)...
+echo       JAVA_TOOL_OPTIONS=%JAVA_TOOL_OPTIONS%
+
+echo.
+echo [2/3] Running clean build (removes stale generated code)...
 call gradlew.bat clean
 
 if %ERRORLEVEL% NEQ 0 (
@@ -31,47 +31,30 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo [2/3] Building project...
-if "%1"=="release" (
-    call gradlew.bat assemblePlayProdRelease
-) else (
-    call gradlew.bat assemblePlayProdDebug
-)
+echo [3/3] Building RED Ultimate (PlayProdDebug)...
+call gradlew.bat assemblePlayProdDebug
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo ========================================
     echo  BUILD FAILED
-    echo.
-    echo  If you see these errors:
-    echo.
-    echo  1. "values-swXXXdp" with Arabic numbers:
-    echo     - Run this script (build-windows.bat) instead of
-    echo       running Gradle directly from Android Studio.
-    echo     - Or set JAVA_TOOL_OPTIONS in Windows:
-    echo       setx JAVA_TOOL_OPTIONS "-Duser.language=en -Duser.country=US"
-    echo.
-    echo  2. "DeviceName.kt syntax error":
-    echo     - Run: gradlew clean
-    echo     - Then rebuild from Android Studio.
-    echo.
-    echo  3. "Dependency verification failed":
-    echo     - Run: gradlew --write-verification-metadata sha256
-    echo     - Or temporarily disable in gradle.properties.
     echo ========================================
+    echo.
+    echo Common fixes:
+    echo   1. Make sure JAVA_TOOL_OPTIONS is set (see above)
+    echo   2. Run 'gradlew clean' before building
+    echo   3. Check verification-metadata.xml for aapt2 version
+    echo   4. If DeviceName.kt has errors, run clean again
+    echo.
     pause
     exit /b 1
 )
 
 echo.
-echo [3/3] Build complete!
+echo ========================================
+echo  BUILD SUCCESSFUL
+echo ========================================
 echo.
-echo APK location:
-if "%1"=="release" (
-    echo   app\build\outputs\apk\playProd\release\app-play-prod-release.apk
-) else (
-    echo   app\build\outputs\apk\playProd\debug\app-play-prod-debug.apk
-)
+echo APK location: app\build\outputs\apk\playProd\debug\
 echo.
 pause
-endlocal

@@ -1,34 +1,69 @@
 #!/usr/bin/env bash
+# ── RED Ultimate — Environment Setup Script ────────────────────────────────
+# Creates .env from .env.example with sensible defaults for development.
 set -euo pipefail
 
-# Optional helper: pre-creates MinIO buckets (private) and verifies the database.
-# The backend auto-creates the "red-media" bucket on startup, so this script is only needed
-# if you want to pre-provision additional buckets before the first boot.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
-MINIO_HOST="${MINIO_HOST:-localhost}"
-MINIO_PORT="${MINIO_PORT:-9000}"
-MINIO_USER="${MINIO_ROOT_USER:-redadmin}"
-MINIO_PASS="${MINIO_ROOT_PASSWORD:-redsecret123}"
-DB_HOST="${DB_HOST:-localhost}"
-DB_USER="${DB_USER:-red}"
-DB_NAME="${DB_NAME:-red_sovereign}"
+echo "🔴 RED Ultimate — Environment Setup"
+echo "====================================="
+echo ""
 
-if ! command -v mc >/dev/null 2>&1; then
-  echo "Skipping MinIO setup: 'mc' client not installed (backend will create buckets automatically)."
-else
-  mc alias set local "http://${MINIO_HOST}:${MINIO_PORT}" "${MINIO_USER}" "${MINIO_PASS}"
-  mc mb --ignore-existing "local/red-media"
-  # IMPORTANT: keep media private — never publish the bucket.
-  echo "MinIO bucket 'red-media' is ready (private)."
+# Generate a random JWT secret
+JWT_SECRET=$(openssl rand -base64 48 | tr -d '\n')
+
+# Check if .env already exists
+if [ -f "$ROOT_DIR/.env" ]; then
+    echo "⚠️  .env already exists. Backing up to .env.bak"
+    cp "$ROOT_DIR/.env" "$ROOT_DIR/.env.bak"
 fi
 
-if command -v psql >/dev/null 2>&1; then
-  PGPASSWORD="${DB_PASSWORD:-password}" psql -h "${DB_HOST}" -U "${DB_USER}" -d postgres -tc \
-    "SELECT 1 FROM pg_database WHERE datname = '${DB_NAME}'" | grep -q 1 || \
-    PGPASSWORD="${DB_PASSWORD:-password}" psql -h "${DB_HOST}" -U "${DB_USER}" -d postgres -c "CREATE DATABASE ${DB_NAME};"
-  echo "Database '${DB_NAME}' is ready."
-else
-  echo "Skipping DB check: 'psql' not installed."
-fi
+# Create .env
+cat > "$ROOT_DIR/.env" << EOF
+# RED Ultimate — Environment Configuration
+# Generated on $(date -I)
 
-echo "✅ RED: environment setup complete."
+# ── JWT Authentication ──────────────────────────────────────────────────────
+RED_JWT_SECRET=$JWT_SECRET
+
+# ── Bootstrap Admin ─────────────────────────────────────────────────────────
+RED_ADMIN_EMAIL=admin@red.local
+RED_ADMIN_PASSWORD=changeme123
+
+# ── Network ─────────────────────────────────────────────────────────────────
+PUBLIC_IP=127.0.0.1
+
+# ── COTURN ──────────────────────────────────────────────────────────────────
+TURN_SECRET=redturnsecret
+
+# ── Database ────────────────────────────────────────────────────────────────
+SPRING_DATASOURCE_URL=jdbc:postgresql://db-postgres:5432/red_sovereign
+SPRING_DATASOURCE_USERNAME=red
+SPRING_DATASOURCE_PASSWORD=password
+
+SPRING_DATA_MONGODB_URI=mongodb://db-mongo:27017/red_messages
+
+SPRING_DATA_REDIS_HOST=cache-redis
+SPRING_DATA_REDIS_PORT=6379
+
+# ── Storage (MinIO) ────────────────────────────────────────────────────────
+MINIO_ROOT_USER=redadmin
+MINIO_ROOT_PASSWORD=redsecret123
+RED_STORAGE_ENDPOINT=http://minio:9000
+
+# ── PSTN / Dumin ───────────────────────────────────────────────────────────
+RED_DUMIN_BASE_URL=http://192.168.1.100:5060
+RED_DUMIN_API_TOKEN=
+EOF
+
+echo "✅ .env created with:"
+echo "   JWT_SECRET: $JWT_SECRET (auto-generated)"
+echo "   ADMIN_EMAIL: admin@red.local"
+echo "   ADMIN_PASSWORD: changeme123"
+echo ""
+echo "⚠️  IMPORTANT: Change the admin password before deploying!"
+echo ""
+echo "Next steps:"
+echo "  1. Edit .env with your custom settings"
+echo "  2. Run: docker compose up -d --build"

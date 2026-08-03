@@ -1,57 +1,181 @@
-# Deployment Guide — RED Sovereign Edition
+# RED Ultimate — Deployment Guide
 
-A fully on-prem, containerised stack: backend (Spring Boot), media SFU (Mediasoup), PSTN gateway (Asterisk), PostgreSQL, MongoDB, Redis, MinIO, and a React admin dashboard behind Nginx.
+## Prerequisites
 
-## 1. Prerequisites
-- Docker + Docker Compose (`docker compose` v2).
-- A physical Dumin/GSM device on the LAN for System B (optional; the gateway reports OFFLINE until present).
-- No internet/cloud is required at runtime.
+- Docker 24+ and Docker Compose v2+
+- 4 GB RAM minimum (8 GB recommended for production)
+- 20 GB disk space minimum
+- Network access between all containers
 
-## 2. Configure (optional)
-Copy `.env.example` (or set env vars) to override secrets — at minimum rotate the JWT secret and the bootstrap admin password:
+## Quick Start
+
 ```bash
-export RED_JWT_SECRET="$(openssl rand -hex 32)"
-export RED_ADMIN_EMAIL=admin@red.local
-export RED_ADMIN_PASSWORD='a-strong-password'
-export PUBLIC_IP=192.168.1.50   # reachable IP for WebRTC ICE candidates
-export TURN_SECRET="$(openssl rand -hex 16)"
+# 1. Clone the repository
+git clone https://github.com/your-org/RED_Ultimate.git
+cd RED_Ultimate
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with your settings (JWT secret, admin credentials, etc.)
+
+# 3. Generate TLS certificates (optional for LAN, required for production)
+./scripts/generate-local-cert.sh 192.168.1.50
+
+# 4. Start all services
+docker compose up -d --build
+
+# 5. Verify all services are healthy
+docker compose ps
 ```
 
-## 3. Launch the whole stack
-```bash
-./build-and-run.sh
-# or:  docker compose up -d --build
-```
+## Service Architecture
 
-## 4. Entry points
-| Service | URL |
-|---|---|
-| Reverse proxy / Admin UI | http://localhost |
-| REST API | http://localhost/api |
-| Chat WebSocket | ws://localhost/ws/chat?token=\<jwt\> |
-| Media SFU (signaling) | http://localhost:4000 (UDP 40000–40100) |
-| MinIO console | http://localhost:9001 |
-| Asterisk AMI | localhost:5038 |
+| Service | Port | Description |
+|---------|------|-------------|
+| Backend (Spring Boot) | 8080 (internal) | API, WebSocket, auth |
+| Nginx | 80/443 | Reverse proxy |
+| PostgreSQL | 5432 (internal) | Users, metadata |
+| MongoDB | 27017 (internal) | Messages, stories, audit |
+| Redis | 6379 (internal) | Dedup, sequencing, presence |
+| MinIO | 9000/9001 | Media storage |
+| Media SFU | 4000 | WebRTC/4K VoIP |
+| Asterisk | 5060/8088 | PSTN/Dumin gateway |
+| Admin Dashboard | 80 (via nginx) | Admin panel |
 
-## 5. Build & distribute the Android app
-The Android client lives in `app-android/` (a standalone Gradle project):
+## Configuration
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RED_JWT_SECRET` | (change-me) | JWT signing secret (≥32 bytes) |
+| `RED_ADMIN_EMAIL` | admin@red.local | Bootstrap admin email |
+| `RED_ADMIN_PASSWORD` | changeme123 | Bootstrap admin password |
+| `PUBLIC_IP` | 127.0.0.1 | Public IP for SFU |
+| `TURN_SECRET` | redturnsecret | COTURN secret |
+
+### TLS Configuration
+
+For production deployments, enable TLS:
+
+1. Generate certificates: `./scripts/generate-local-cert.sh <YOUR_IP>`
+2. Update `docker-compose.yml` to use `nginx.tls.conf`
+3. Set `USE_TLS = true` in `DevelopedServerConfig.java`
+4. Copy CA cert to Android app assets
+
+### Redis Configuration
+
+Redis is configured with:
+- 256 MB max memory
+- LRU eviction policy
+- Used for: dedup (24h TTL), sequencing, presence (60s TTL), rate limiting (5min TTL), notifications (7d TTL)
+
+## Building the Android App
+
+### On Linux/macOS
 ```bash
 cd app-android
-./gradlew :app:assembleRelease   # or assembleDebug
-# APK: app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleDebug
 ```
-Configure the server endpoint by editing the `BASE_URL` in `app-android/app/src/main/java/com/red/core/di/NetworkModule.kt` (default `http://192.168.1.50:8080/`).
 
-## 6. Admin workflow
-- On first boot, an admin account is auto-created from `RED_ADMIN_EMAIL` / `RED_ADMIN_PASSWORD` (only if none exists).
-- Log in via the admin UI or `POST /api/auth/login`, then approve pending users at `POST /api/admin/users/{id}/approve`.
-- Use the Kill Switch at `POST /api/admin/security/kill-switch/{userId}` to revoke a lost device.
+### On Windows (Arabic locale)
+```batch
+build-windows.bat
+```
 
-## 7. Building the Signal integration (optional)
-The main Signal-Android app (the `:app` module) is still buildable with its own toolchain:
+This script:
+1. Sets `JAVA_TOOL_OPTIONS=-Duser.language=en -Duser.country=US` to prevent Arabic-Indic digits
+2. Runs `gradlew clean` to remove stale generated code
+3. Runs `gradlew assemblePlayProdDebug`
+
+## Monitoring
+
+### Health Checks
+All services have health checks configured in `docker-compose.yml`.
+
+### Admin Dashboard
+Access the admin dashboard at `http://<YOUR_IP>/`
+
+Features:
+- **Dashboard**: Real-time system stats (messages, users, stories)
+- **Approvals**: Manage user registration requests
+- **Users**: Full user management (CRUD, promote, ban)
+- **Stories**: View and moderate stories
+- **Diagnostics**: System health checks
+- **Audit Log**: Security event viewer
+- **Dumin/PSTN**: Hardware gateway monitoring
+
+### API Endpoints
+- Health: `GET /actuator/health`
+- Stats: `GET /api/admin/monitor/stats`
+- System health: `GET /api/admin/monitor/health`
+
+## Backup Strategy
+
+### PostgreSQL
 ```bash
-./gradlew :Signal-Android:assembleDebug
+docker exec red-db-sql pg_dump -U red red_sovereign > backup_$(date +%Y%m%d).sql
 ```
-The RED integration lives under `app/src/main/java/org/thoughtcrime/securesms/developed/` and now compiles cleanly.
 
-**Rights Reserved to RED © 2026**
+### MongoDB
+```bash
+docker exec red-db-nosql mongodump --db red_messages --out /tmp/backup
+docker cp red-db-nosql:/tmp/backup ./mongodb_backup_$(date +%Y%m%d)
+```
+
+### Redis
+Redis data is ephemeral (cache only). No backup needed.
+
+### MinIO
+```bash
+docker exec red-storage mc mirror local/red-media /tmp/backup
+```
+
+## Scaling
+
+### Horizontal Scaling
+The backend can be scaled horizontally. Key considerations:
+- **WebSocket**: Session affinity via nginx (IP hash)
+- **Redis**: Shared state across instances (presence, dedup, sequences)
+- **MongoDB**: Shared message store
+- **PostgreSQL**: Shared user store
+
+### Vertical Scaling
+- Backend: Increase `JAVA_OPTS` in docker-compose.yml (default: `-Xms256m -Xmx512m`)
+- Redis: Increase `maxmemory` in docker-compose.yml command
+- PostgreSQL: Increase `shared_buffers` and `work_mem`
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Arabic-Indic digits in resource directories** (Windows)
+   - Use `build-windows.bat` or set `JAVA_TOOL_OPTIONS`
+
+2. **DeviceName.kt Wire generation errors**
+   - Run `gradlew clean` before building
+
+3. **Dependency verification failure**
+   - Check `gradle/verification-metadata.xml` for aapt2 version
+
+4. **WebSocket connection fails**
+   - Check JWT token in handshake query parameter
+   - Verify nginx WebSocket proxy configuration
+
+5. **Messages not delivered**
+   - Check Redis connectivity
+   - Verify MongoDB connection
+   - Check WebSocket session in PresenceService
+
+### Logs
+
+```bash
+# Backend logs
+docker compose logs -f backend
+
+# All service logs
+docker compose logs -f
+
+# Specific service
+docker compose logs -f cache-redis
+```

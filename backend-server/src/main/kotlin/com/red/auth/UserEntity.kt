@@ -36,7 +36,13 @@ class UserEntity(
   val createdAt: Long = System.currentTimeMillis(),
 
   /** Optional: a phone number bound to this account for PSTN calls. */
-  var phoneNumber: String? = null
+  var phoneNumber: String? = null,
+
+  /** URL or object key for the user's avatar image. */
+  var avatarUrl: String? = null,
+
+  /** Last seen timestamp (updated on WebSocket connect/disconnect). */
+  var lastSeenAt: Long = 0L
 ) {
   override fun equals(other: Any?): Boolean = other is UserEntity && other.id == id
   override fun hashCode(): Int = id.hashCode()
@@ -49,4 +55,7 @@ interface UserRepository : JpaRepository<UserEntity, String> {
 
   @Query("SELECT u FROM UserEntity u WHERE u.status = :status ORDER BY u.createdAt ASC")
   fun findByStatus(@Param("status") status: UserStatus): List<UserEntity>
+
+  @Query("SELECT u FROM UserEntity u WHERE LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%')) OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :name, '%'))")
+  fun findByEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(@Param("email") email: String, @Param("name") name: String): List<UserEntity>
 }

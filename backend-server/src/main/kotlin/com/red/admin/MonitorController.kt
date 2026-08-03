@@ -2,11 +2,13 @@ package com.red.admin
 
 import com.red.delivery.MessageService
 import com.red.delivery.StoryRepository
+import com.red.security.AuditLogService
 import com.red.websocket.PresenceService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.io.File
+import java.lang.management.ManagementFactory
 
 /**
  * Live system monitoring backed by real metrics (JVM, Mongo counts, presence, disk).
@@ -16,7 +18,8 @@ import java.io.File
 class MonitorController(
   private val messageService: MessageService,
   private val storyRepository: StoryRepository,
-  private val presence: PresenceService
+  private val presence: PresenceService,
+  private val auditLogService: AuditLogService
 ) {
 
   @GetMapping("/health")
@@ -26,14 +29,21 @@ class MonitorController(
     val totalMb = runtime.totalMemory() / 1024 / 1024
     val maxMb = runtime.maxMemory() / 1024 / 1024
     val cpuCores = runtime.availableProcessors()
+    val now = System.currentTimeMillis()
+    val uptime = ManagementFactory.getRuntimeMXBean().uptime
+
     return mapOf(
       "status" to "UP",
       "cpu_cores" to cpuCores,
       "ram_used_mb" to usedMb,
       "ram_total_mb" to totalMb,
       "ram_max_mb" to maxMb,
+      "ram_usage_percent" to ((usedMb.toDouble() / maxMb.toDouble()) * 100).toInt(),
       "active_connections" to presence.onlineUserCount(),
-      "disk_free_gb" to (File("/").usableSpace / 1024 / 1024 / 1024)
+      "disk_free_gb" to (File("/").usableSpace / 1024 / 1024 / 1024),
+      "disk_total_gb" to (File("/").totalSpace / 1024 / 1024 / 1024),
+      "uptime_ms" to uptime,
+      "audit_events_24h" to auditLogService.countSince(now - 24 * 60 * 60 * 1000)
     )
   }
 
@@ -41,10 +51,13 @@ class MonitorController(
   fun stats(): Map<String, Any> {
     val now = System.currentTimeMillis()
     val dayAgo = now - 24L * 60 * 60 * 1000
+    val hourAgo = now - 60L * 60 * 1000
     return mapOf(
       "messages_24h" to messageService.countSince(dayAgo),
+      "messages_1h" to messageService.countSince(hourAgo),
       "stories_active" to storyRepository.countByExpiresAtGreaterThan(now),
       "online_users" to presence.onlineUserCount(),
+      "online_user_ids" to presence.onlineUserIds(),
       "generated_at" to now
     )
   }

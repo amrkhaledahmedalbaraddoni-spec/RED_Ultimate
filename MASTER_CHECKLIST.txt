@@ -5,9 +5,17 @@ Component: [app-android]  (standalone Gradle Compose app)
 - [x] Real Gradle build (settings/build.gradle.kts, manifest, Hilt, Room, Retrofit/Moshi)
 - [x] Auth flow with admin-approval states (pending/rejected/banned)
 - [x] Chat (Room-backed store, WebSocket delivery manager with ACK + retry)
-- [x] Stories (capture/viewer, 24h cleanup worker)
+- [x] Chat search (user search by name/email)
+- [x] Chat typing indicators (WebSocket TYPING frames)
+- [x] Chat read receipts (WebSocket READ frames)
+- [x] Stories (capture/viewer, 24h cleanup worker, clickable list)
 - [x] PSTN dialer (System B - Dumin, isolated from VoIP)
+- [x] Call log (real PSTN call history with duration, direction)
+- [x] Settings (profile editing, password change, about, logout)
 - [x] UUID v7 for message ids
+- [x] Offline sync service (pending messages on reconnect)
+- [x] Notification channels (messages, calls, stories)
+- [x] UserView model (matches backend)
 
 Component: [backend-server]  (Spring Boot 3.4)
 - [x] @SpringBootApplication entry point + versioned jar
@@ -17,10 +25,28 @@ Component: [backend-server]  (Spring Boot 3.4)
 - [x] Real-time WebSocket (/ws/chat) with presence + offline sync
 - [x] MinIO storage (private bucket), live monitoring, kill-switch
 - [x] Story auto-cleanup scheduler
+- [x] UserView data class (never exposes password hash)
+- [x] User search (by name or email)
+- [x] Profile update (name, phone number)
+- [x] Password change (requires current password)
+- [x] Read receipts (WebSocket READ frames)
+- [x] Typing indicators (WebSocket TYPING frames)
+- [x] User blocking (BlockService, BlockController, BlockDocument)
+- [x] Message deletion (own messages only)
+- [x] Audit log (AuditLogService, AuditLogDocument, AuditLogController)
+- [x] Notification service (offline message queue in Redis)
+- [x] Presence last-seen tracking
+- [x] Comprehensive tests (Auth, Security, Message, Block, Notification)
 
 Component: [admin_dashboard]  (React 18 + Ant Design)
 - [x] Buildable (react-scripts) + Dockerfile
-- [x] Live monitor, approvals, diagnostics, Dumin/PSTN (API-aligned)
+- [x] Live monitor (real-time stats, health, system status)
+- [x] Approvals page (approve/reject/ban)
+- [x] User management page (full CRUD, search, promote, detail modal)
+- [x] Story management page (view, delete, expiry tracking)
+- [x] Diagnostics page (health checks, system status)
+- [x] Dumin/PSTN monitor page
+- [x] Audit log page (search, filter, sort security events)
 
 Component: [media-sfu]  (Mediasoup)
 - [x] WebSocket signaling + Dockerfile
@@ -29,8 +55,32 @@ Component: [media-sfu]  (Mediasoup)
 Component: [pstn-asterisk]
 - [x] extensions.conf + manager.conf + pjsip.conf (Dumin trunk + WebRTC endpoint)
 
+Component: [shared-proto]
+- [x] messages.proto (ChatMessage, MessageAck, ReadReceipt, TypingIndicator, Presence, Story, UserProfile, BlockAction, PushNotification)
+
 Component: [infrastructure]
 - [x] docker-compose (10 services), nginx.conf reverse proxy, build-and-run.sh
+- [x] Health checks for all services
+- [x] Redis memory limits and LRU eviction
+- [x] Backend JVM memory limits
+- [x] build-windows.bat (Arabic locale fix)
+- [x] TLS certificate generation script
+
+Component: [security]
+- [x] LogScrubber (IPs, emails, Bearer tokens)
+- [x] Rate limiting (5/5min per IP+email)
+- [x] Kill-switch (ban + session termination)
+- [x] Audit logging (all security events)
+- [x] User blocking (silent message drop)
+- [x] TLS workflow documentation
+- [x] SECURITY.md (comprehensive)
+- [x] REDLocalTrustStore for sovereign CA
+
+Component: [documentation]
+- [x] ARCHITECTURE.md (comprehensive with API reference)
+- [x] SECURITY.md (threat model, features, TLS workflow)
+- [x] DEPLOY.md (deployment guide, backup, scaling, troubleshooting)
+- [x] audit_check.py (81/81 checks)
 
 Honest status
 -------------

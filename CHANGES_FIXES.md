@@ -1,54 +1,102 @@
-# سجل الإصلاحات والتطوير (RED Ultimate)
+# RED Ultimate — Changes & Fixes Log
 
-هذا الملف يوثّق كل ما تم إصلاحه وتطويره وإكماله بعد التقرير التقني (`TechAnalysis_Report_AR.md`).
+## v1.1.0 — Comprehensive Enhancement (2026-08-03)
 
-## 1. تطبيق Signal-Android الأصلي (إصلاحات قاتلة للبناء)
-- ✅ إعادة تسمية `DevelopedChatInitialization.java` → `REDInitialization.java` ليتطابق اسم الملف مع اسم الصنف (كان يكسر الترجمة).
-- ✅ إعادة كتابة `MasterIntegration.kt` لإزالة الاستيرادات غير القابلة للحل وإضافة بوابة اعتماد مدير حقيقية عبر SharedPreferences (default-deny).
-- ✅ إعادة كتابة `DevelopedChatCore.kt` (REDCore) ليأخذ `Context` وينفّذ بوابة الاعتماد فعلياً، وتم تمرير `this` من `ApplicationContext.onCreate`.
-- ✅ تطبيق **UUID v7 حقيقي (RFC 9562)** في `GuaranteedDelivery` (أصلاً كان `timestamp+UUIDv4`).
-- ✅ تنظيف `QualityController.kt` (إزالة استيراد `CallManager` غير المستخدم) و`REDInitialization.java` (إزالة استيراد غير موجود).
+### Backend Server
 
-## 2. خادم backend-server (إعادة بناء كاملة ليُبنى ويُشغَّل)
-- ✅ إضافة صنف `@SpringBootApplication` + `main()` + `version = "1.0.0"` + `settings.gradle.kts` + `dependency-management`.
-- ✅ إصلاح Dockerfile (مرحلتان: gradle build → JRE run) واسم الـ JAR الصحيح.
-- ✅ توحيد كل الحزم تحت `com.red.*` ومطابقة المسار/الحزمة (حُذفت `com/developedchat` و`com/red/server` المتناقضتان).
-- ✅ مصادقة حقيقية: **JWT موقّع (HS256) + BCrypt + فلتر JWT + SecurityConfig stateless + CORS**.
-- ✅ سير اعتماد المدير في PostgreSQL (register/login/status + approve/reject/ban/promote) + Bootstrap admin اختياري.
-- ✅ تسليم مضمون حقيقي: إزالة التكرار عبر `SETNX` في Redis + ترقيم تسلسلي `INCR` + تخزين Mongo صحيح عبر `MessageDocument`.
-- ✅ WebSocket `/ws/chat` مع مصادقة JWT في handshake + Presence + ACK + Offline sync (`/api/messages/*`).
-- ✅ مراقبة حقيقية (JVM/Mongo/presence/disk) بدل القيم الثابتة.
-- ✅ تخزين MinIO حقيقي (رفع/تنزيل، bucket خاص) + controller.
-- ✅ Kill-switch حقيقي (ban + قطع الجلسة).
-- ✅ مجدول حذف القصص المنتهية + DTOs JSON متسقة مع العميل.
-- ✅ اختبار وحدة لـ UUID v7 (`UuidV7Test.kt`).
+#### New Features
+- **UserView data class**: Proper JSON-safe projection of UserEntity (never exposes password hash)
+- **User search**: `GET /api/users/search?q=...` — search users by name or email
+- **Profile update**: `PUT /api/users/me` — update name, phone number
+- **Password change**: `POST /api/auth/change-password` — requires current password verification
+- **Read receipts**: `ReadReceiptService` — WebSocket READ frames with sender notification
+- **Typing indicators**: `ChatWebSocketHandler` — WebSocket TYPING frames forwarded to peers
+- **User blocking**: `BlockService` + `BlockController` + `BlockDocument` — silent message drop
+- **Message deletion**: `DELETE /api/messages/{messageId}` — own messages only
+- **Audit log**: `AuditLogService` + `AuditLogDocument` + `AuditLogController` — append-only security events
+- **Notification service**: `NotificationService` — offline message queue in Redis (7-day TTL)
+- **Presence last-seen**: `UserEntity.lastSeenAt` updated on WebSocket connect/disconnect
+- **User avatar**: `UserEntity.avatarUrl` field added
 
-## 3. تطبيق app-android (نظام بناء كامل + إكمال النواقص)
-- ✅ إضافة `settings.gradle.kts` + `build.gradle.kts` جذر + `app/build.gradle.kts` (AGP 8.7, Compose, Hilt, Room, Retrofit/Moshi, CameraX, Coil3, WorkManager, Accompanist).
-- ✅ `AndroidManifest.xml` + `RedApplication` (`@HiltAndroidApp`) + موارد (strings/themes/network_security_config).
-- ✅ إعادة هيكلة كل الملفات إلى مخطط أندرويد صحيح `app/src/main/java/com/red/...` مع مطابقة الحزم.
-- ✅ إكمال طبقة البيانات المفقودة: `RedDatabase`, `MessageDao/Entity`, `StoryDao/Entity`, `MessageDeliveryManager`, `ClientIdentity`, `DevelopedWebSocketClient(Impl)` بـ JSON + إعادة اتصال exponential backoff حقيقية, `UuidV7`, DTOs.
-- ✅ إكمال أنواع PSTN: `DuminApi`, `PstnCallRequest/Response`, `PstnCallState`, و `DatabaseModule` يوفّر `PstnDao`.
-- ✅ إنشاء الشاشات المفقودة: `StoryListScreen`, `CallLogScreen`, `DialPadScreen`, `SettingsScreen`.
-- ✅ إعادة كتابة `MainActivity` ليكون جذر موحّد موقّت بالاعتماد (auth flow ↔ dashboard)، و`AppNavigation` كـ `AuthFlow`.
-- ✅ إصلاح `CameraCaptureScreen` (LocalLifecycleOwner، إغلاق الـ executor، إعادة ربط الكاميرا عند القلب) وحماية `StoryViewerScreen` من القائمة الفارغة.
-- ✅ مواءمة DTOs ومسارات API مع الخادم (`fullName`/`role`, `api/auth/...`, `api/pstn/...`).
+#### Improvements
+- **ChatWebSocketHandler**: Refactored to handle TYPING, READ, and regular message frames
+- **PresenceService**: Added `broadcast()` method and `onlineUserIds()` for system announcements
+- **MonitorController**: Added `messages_1h`, `online_user_ids`, `ram_usage_percent`, `uptime_ms`, `audit_events_24h`
+- **SecurityConfig**: All new endpoints properly secured
+- **AdminApprovalController**: Audit logging for all approval/ban/promote actions
+- **SecurityController**: Audit logging for kill-switch activations
+- **Dockerfile**: Non-root user, JVM tuning for containers, configurable JAVA_OPTS
 
-## 4. البنية التحتية والنشر
-- ✅ إنشاء `nginx.conf` (reverse proxy + WebSocket upgrade).
-- ✅ `media-sfu`: خادوم Mediasoup حقيقي بـ WebSocket signaling + AV1/VP9/H.264/Opus بدقة 4K + `Dockerfile`.
-- ✅ `admin_dashboard`: `package.json` قابل للبناء (react-scripts) + `index.js` + `App.js` (router) + `Dockerfile` + مواءمة كل الصفحات مع واجهات الخادم الحقيقية.
-- ✅ `pstn-asterisk/pjsip.conf` (trunk Dumin + endpoint WebRTC) + إصلاح الـ Dockerfile.
-- ✅ إعادة كتابة `docker-compose.yml` (10 خدمات متناسقة + متغيرات بيئة + healthchecks + volumes دائمة).
-- ✅ `build-and-run.sh` (يدعم `docker compose` v2).
-- ✅ `infrastructure/setup-env.sh` مصحّح (بلا bucket عام، بيانات اعتماد صحيحة، idempotent).
-- ✅ `.env.example`, `.dockerignore` لكل خدمة.
+#### Tests
+- `AuthControllerTest`: Password encoding, JWT generation/parsing, UserView mapping, UserEntity equality
+- `SecurityTest`: LogScrubber redaction (IPs, emails, Bearer tokens, multiple redactions)
+- `MessageServiceTest`: IncomingMessage, StoredMessage, AckStatus, MessageAck
+- `BlockServiceTest`: BlockDocument fields
+- `NotificationServiceTest`: PendingNotification, ReadReceipt
 
-## 5. التنظيف والتوثيق
-- ✅ حذف التكرارات/المهجورات: `server/` (خادم بلا build)، `admin-dashboard/` (TS ناقص)، `temp-dc.yml`.
-- ✅ إصلاح `.gitignore` (تكرار + إضافة node_modules).
-- ✅ إعادة كتابة `audit_check.py` ليكون فحصاً صادقاً حقيقياً (21 فحص، كلها تمرّ الآن).
-- ✅ تحديث `MASTER_CHECKLIST.txt` (إزالة ادّعاء «COMPLETE» الكاذب) و`DEPLOY.md` (تعليمات بناء فعلية).
+### App-Android
 
-## نتيجة التحقق
-`python3 audit_check.py` → **21/21 PASS**.
+#### New Features
+- **Call log screen**: Real PSTN call history with duration, direction (incoming/outgoing/missed), timestamps
+- **CallLogViewModel**: Reactive call log from Room database
+- **Settings screen**: Full settings with profile editing, password change, about dialog, logout
+- **SettingsViewModel**: Profile loading, updating, password changing
+- **User search in chat**: Search users by name/email to start new conversations
+- **Typing indicators**: `ChatViewModel.isTyping` state, displayed in chat detail
+- **Read receipts**: `ChatViewModel.markAsRead()` method
+- **Offline sync service**: `OfflineSyncService` — fetches pending messages on reconnect
+- **Notification helper**: `NotificationHelper` — creates notification channels and shows notifications
+- **UserView model**: Matches backend UserView for API compatibility
+
+#### Improvements
+- **ChatListScreen**: Added search bar, user search results, empty state with guidance
+- **ChatDetailScreen**: Added typing indicator, auto-scroll to bottom
+- **StoryListScreen**: Added clickable stories, avatar circles, expiry badges
+- **StoryViewerScreen**: Now navigable from story list
+- **AuthApi**: Added `getMyProfile()`, `updateProfile()`, `changePassword()`
+- **ChatApi**: Added `searchUsers()`, `getMessages()`, `getPendingMessages()`
+- **Models**: Added `UserView` data class
+- **RedApplication**: Creates notification channels on startup
+
+### Admin Dashboard
+
+#### New Features
+- **Audit Log page**: Searchable, filterable security event viewer with color-coded action tags
+- **User Management page**: Full CRUD with search, detail modal, approve/promote/ban actions
+- **Story Management page**: View and moderate stories with expiry tracking and delete
+
+#### Improvements
+- **App.js**: Added routes for /users, /stories, /audit, /settings
+- **LiveMonitor**: Added messages_1h stat, RAM progress bar, system status timeline, infrastructure overview
+- **Navigation**: Added icons for User Management, Story Management, Audit Log, Settings
+
+### Infrastructure
+
+#### Improvements
+- **docker-compose.yml**: Health checks for all services, Redis memory limits and LRU eviction, backend JVM memory limits
+- **build-windows.bat**: Improved with step-by-step output and error messages
+- **.env.example**: Comprehensive with all configuration options
+- **infrastructure/setup-env.sh**: Auto-generates JWT secret, creates .env with sensible defaults
+- **media-sfu/server.js**: Rate limiting (50 connections per IP), max payload limit
+- **backend-server/Dockerfile**: Non-root user, configurable JAVA_OPTS
+
+### Documentation
+
+#### Improvements
+- **ARCHITECTURE.md**: Comprehensive with API reference, data flow diagrams, all features documented
+- **SECURITY.md**: Added user blocking, audit log, read receipts, typing indicators
+- **DEPLOY.md**: Comprehensive with backup strategy, scaling, troubleshooting
+- **MASTER_CHECKLIST.txt**: Updated with all new features
+- **shared-proto/messages.proto**: Added ReadReceipt, TypingIndicator, PresenceUpdate, Story, UserProfile, BlockAction, PushNotification
+- **audit_check.py**: Expanded from 46 to 81 checks
+
+---
+
+## v1.0.0 — Initial Release (2026-08-01)
+
+### Fixed
+- Critical Signal app build failures (DevelopedChatInitialization.java removal, REDInitialization.java)
+- Backend rebuild (Spring Boot 3.4, JWT, BCrypt, Redis dedup, MongoDB, WebSocket)
+- App-android build system (Hilt, Compose, Room, Retrofit)
+- Windows build fixes (Arabic locale, aapt2 verification, clean build)
+- Security hardening (TLS, admin approval, REDLocalTrustStore, LogScrubber, rate limiting)

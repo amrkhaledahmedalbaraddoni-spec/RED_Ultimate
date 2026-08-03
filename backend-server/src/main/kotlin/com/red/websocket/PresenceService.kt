@@ -1,10 +1,14 @@
 package com.red.websocket
 
+import com.red.auth.UserRepository
+import com.red.auth.UserStatus
 import com.red.config.JwtService
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
 import org.springframework.stereotype.Service
+import org.springframework.web.socket.CloseStatus
+import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.server.HandshakeInterceptor
 import java.util.concurrent.ConcurrentHashMap
@@ -16,7 +20,8 @@ import java.util.concurrent.TimeUnit
  */
 @Service
 class PresenceService(
-  private val redis: StringRedisTemplate
+  private val redis: StringRedisTemplate,
+  private val userRepository: UserRepository? = null
 ) {
   private val sessions: MutableMap<String, WebSocketSession> = ConcurrentHashMap()
 
@@ -24,11 +29,25 @@ class PresenceService(
     sessions[userId]?.let { runCatching { if (it.isOpen) it.close() } }
     sessions[userId] = session
     redis.opsForValue().set("presence:$userId", "online", 60, TimeUnit.SECONDS)
+    // Update last seen
+    try {
+      userRepository?.findById(userId)?.ifPresent { user ->
+        user.lastSeenAt = System.currentTimeMillis()
+        userRepository.save(user)
+      }
+    } catch (_: Exception) { /* best effort */ }
   }
 
   fun unregister(userId: String, session: WebSocketSession) {
     sessions.remove(userId, session)
     redis.delete("presence:$userId")
+    // Update last seen
+    try {
+      userRepository?.findById(userId)?.ifPresent { user ->
+        user.lastSeenAt = System.currentTimeMillis()
+        userRepository.save(user)
+      }
+    } catch (_: Exception) { /* best effort */ }
   }
 
   fun sessionFor(userId: String): WebSocketSession? = sessions[userId]
@@ -36,6 +55,20 @@ class PresenceService(
   fun onlineUserCount(): Int = sessions.size
 
   fun isOnline(userId: String): Boolean = sessions.containsKey(userId)
+
+  fun onlineUserIds(): Set<String> = sessions.keys.toSet()
+
+  /**
+   * Broadcasts a message to all connected users (e.g., for system announcements).
+   */
+  fun broadcast(message: String) {
+    val textMessage = TextMessage(message)
+    sessions.values.forEach { session ->
+      if (session.isOpen) {
+        runCatching { session.sendMessage(textMessage) }
+      }
+    }
+  }
 }
 
 /**

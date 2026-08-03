@@ -1,9 +1,11 @@
 package com.red.feature.chat
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -12,11 +14,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.red.core.delivery.MessageEntity
 import com.red.core.delivery.MessageStatus
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun ChatDetailScreen(
@@ -25,11 +30,32 @@ fun ChatDetailScreen(
 ) {
     var textState by remember { mutableStateOf("") }
     val messages by viewModel.getMessages(conversationId).collectAsState(initial = emptyList())
+    val isTyping by viewModel.isTyping.collectAsState()
+    val listState = rememberLazyListState()
+
+    // Auto-scroll to bottom when new messages arrive
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Engineer Team") },
+                title = {
+                    Column {
+                        Text("Chat")
+                        if (isTyping) {
+                            Text(
+                                "typing...",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontStyle = FontStyle.Italic,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
                 actions = {
                     IconButton(onClick = { /* VoIP Call */ }) { Icon(Icons.Default.Call, null) }
                     IconButton(onClick = { /* Video Call */ }) { Icon(Icons.Default.Videocam, null) }
@@ -45,15 +71,18 @@ fun ChatDetailScreen(
                         viewModel.sendMessage(conversationId, textState)
                         textState = ""
                     }
+                },
+                onAttach = {
+                    // TODO: File attachment
                 }
             )
         }
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 8.dp),
-            reverseLayout = true
+            state = listState
         ) {
-            items(messages.reversed()) { msg ->
+            items(messages) { msg ->
                 MessageBubble(msg)
             }
         }
@@ -77,7 +106,7 @@ fun MessageBubble(msg: MessageEntity) {
             Text(msg.payload, color = textColor, fontSize = 16.sp)
             Row(modifier = Modifier.align(Alignment.End), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "12:00 PM", // Mock time
+                    formatMessageTime(msg.timestamp),
                     fontSize = 10.sp,
                     color = textColor.copy(alpha = 0.7f)
                 )
@@ -104,13 +133,18 @@ fun DeliveryStatusIcon(status: MessageStatus) {
 }
 
 @Composable
-fun ChatInput(text: String, onTextChange: (String) -> Unit, onSend: () -> Unit) {
+fun ChatInput(
+    text: String,
+    onTextChange: (String) -> Unit,
+    onSend: () -> Unit,
+    onAttach: () -> Unit = {}
+) {
     Surface(tonalElevation = 2.dp) {
         Row(
             modifier = Modifier.padding(8.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { /* Attach */ }) { Icon(Icons.Default.Add, null) }
+            IconButton(onClick = onAttach) { Icon(Icons.Default.Add, null) }
             TextField(
                 value = text,
                 onValueChange = onTextChange,
@@ -126,4 +160,10 @@ fun ChatInput(text: String, onTextChange: (String) -> Unit, onSend: () -> Unit) 
             }
         }
     }
+}
+
+private fun formatMessageTime(timestamp: Long): String {
+    return try {
+        SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp))
+    } catch (_: Exception) { "" }
 }
