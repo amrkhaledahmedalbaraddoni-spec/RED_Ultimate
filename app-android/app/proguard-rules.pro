@@ -44,3 +44,33 @@
 -keepclassmembers class kotlinx.coroutines.** {
     volatile <fields>;
 }
+
+# CameraX
+-keep class androidx.camera.** { *; }
+-dontwarn androidx.camera.**
+
+# Biometric
+-keep class androidx.biometric.** { *; }
+
+# DataStore
+-keep class androidx.datastore.** { *; }
+
+# Navigation
+-keep class androidx.navigation.** { *; }
+
+# WorkManager
+-keep class androidx.work.** { *; }
+-keepclassmembers class * extends androidx.work.CoroutineWorker {
+    public <methods>;
+}
+
+# Compose
+-dontwarn androidx.compose.**
+-keep class androidx.compose.** { *; }
+
+# Remove logging in release builds
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+    public static *** i(...);
+}
