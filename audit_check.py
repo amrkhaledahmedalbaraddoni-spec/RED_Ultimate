@@ -132,6 +132,10 @@ checks.append(("No standalone app-android project remains",
     not os.path.exists(p("app-android"))))
 checks.append(("No second android project remains",
     not os.path.exists(p("android"))))
+checks.append(("Backend is wired as a composite build",
+    'includeBuild("backend-server")' in read("settings.gradle.kts")))
+checks.append(("The main app has one explicit stable application ID",
+    'applicationId = "org.thoughtcrime.securesms"' in read("app","build.gradle.kts")))
 checks.append(("RED feature activity is part of the main manifest",
     "com.red.MainActivity" in read("app","src","main","AndroidManifest.xml")))
 checks.append(("merged :app has build.gradle.kts",

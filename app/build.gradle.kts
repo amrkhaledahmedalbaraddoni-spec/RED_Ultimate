@@ -278,6 +278,10 @@ android {
   }
 
   defaultConfig {
+    // One stable production identity. RED is a feature surface inside this APK; it is not a
+    // second application with a competing com.red.sovereign ID.
+    applicationId = "org.thoughtcrime.securesms"
+
     if (currentHotfixVersion >= maxHotfixVersions) {
       throw AssertionError("Hotfix version offset is too large!")
     }

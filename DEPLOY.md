@@ -112,7 +112,7 @@ build-windows.bat
 ```
 
 This script:
-1. Sets `JAVA_TOOL_OPTIONS=-Duser.language=en -Duser.country=US` to prevent Arabic-Indic digits
+1. Sets `JAVA_TOOL_OPTIONS=-Duser.language=en -Duser.country=US -Dfile.encoding=UTF-8` to prevent Arabic-Indic digits and generated-source encoding corruption
 2. Runs `gradlew clean` to remove stale generated code
 3. Runs `gradlew assemblePlayProdDebug`
 

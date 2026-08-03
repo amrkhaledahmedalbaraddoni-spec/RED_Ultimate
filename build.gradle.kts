@@ -64,6 +64,18 @@ subprojects {
   }
 }
 
+tasks.register("backendBuild") {
+  group = "Build"
+  description = "Builds the local Spring Boot backend composite build."
+  dependsOn(gradle.includedBuild("backend-server").task(":build"))
+}
+
+tasks.register("buildAll") {
+  group = "Build"
+  description = "Builds the single Android application and the local backend service."
+  dependsOn(":Signal-Android:assemblePlayProdDebug", "backendBuild")
+}
+
 tasks.register("buildQa") {
   group = "Verification"
   description = "Quality Assurance for build logic."

@@ -14,7 +14,7 @@ echo.
 
 REM Force English locale for the JVM (prevents Arabic-Indic digits
 REM like ٣٦٠ in resource directory names like values-sw360dp)
-set JAVA_TOOL_OPTIONS=-Duser.language=en -Duser.country=US
+set JAVA_TOOL_OPTIONS=-Duser.language=en -Duser.country=US -Duser.variant= -Dfile.encoding=UTF-8
 
 echo [1/3] Setting locale to English (prevents Arabic-Indic digit issues)...
 echo       JAVA_TOOL_OPTIONS=%JAVA_TOOL_OPTIONS%

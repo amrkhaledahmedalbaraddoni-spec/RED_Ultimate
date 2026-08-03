@@ -40,6 +40,9 @@ Build the merged APK from the repository root:
 ```bash
 ./gradlew :Signal-Android:assemblePlayProdDebug
 
+# Build Android and the local Spring Boot backend together
+./gradlew buildAll
+
 # Local server (Android Emulator -> host machine)
 ./gradlew -Pred.server.url=http://10.0.2.2:8080 -Pred.dumin.enabled=false :Signal-Android:assemblePlayProdDebug
 
