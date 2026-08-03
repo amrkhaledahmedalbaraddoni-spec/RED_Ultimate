@@ -60,6 +60,14 @@ object REDCore {
     Log.i(TAG, "All RED systems online (VoIP 4K/AV1, PSTN/Dumin, Guaranteed Delivery).")
   }
 
+  /** Clear user-scoped RED engines when the RED account logs out. */
+  fun reset() {
+    deliveryEngine = null
+    pstnEngine = null
+    voipEngine = null
+    Log.i(TAG, "RED engines reset")
+  }
+
   fun voipEngine(): UltraHDCall? = voipEngine
   fun pstnEngine(): DuminManager? = pstnEngine
   fun deliveryEngine(): GuaranteedDelivery? = deliveryEngine

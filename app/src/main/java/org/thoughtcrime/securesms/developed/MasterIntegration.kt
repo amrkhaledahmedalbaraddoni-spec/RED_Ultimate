@@ -49,6 +49,9 @@ object MasterIntegration {
   fun clearApproval(context: Context) {
     context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
       .edit().remove(KEY_APPROVED).remove(KEY_TOKEN).apply()
+    voipEngine = null
+    pstnEngine = null
+    deliveryEngine = null
   }
 
   /**

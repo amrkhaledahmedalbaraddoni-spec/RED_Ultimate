@@ -68,15 +68,17 @@ class AuthViewModel @Inject constructor(
             try {
                 val response = authApi.login(mapOf("email" to email, "password" to password))
                 if (response.isSuccessful) {
-                    val user = response.body()?.user
-                    when (user?.status) {
+                    val body = response.body()
+                    if (body == null) {
+                        _uiState.value = AuthUiState.Error("Login returned an empty response")
+                        return@launch
+                    }
+                    when (body.user.status) {
                         UserStatus.APPROVED -> {
-                            response.body()?.let { body ->
-                                identity.userId = body.user.id
-                                identity.token = body.token
-                                tokenStore.saveToken(body.token, body.user.id)
-                                org.thoughtcrime.securesms.developed.MasterIntegration.storeToken(context, body.token)
-                            }
+                            identity.userId = body.user.id
+                            identity.token = body.token
+                            tokenStore.saveToken(body.token, body.user.id)
+                            org.thoughtcrime.securesms.developed.MasterIntegration.storeToken(context, body.token)
                             org.thoughtcrime.securesms.developed.MasterIntegration.markApproved(context)
                             org.thoughtcrime.securesms.developed.REDCore.initializeEverything(context)
                             runCatching { deliveryManager.start() }
@@ -125,6 +127,7 @@ class AuthViewModel @Inject constructor(
 
     fun logout() {
         deliveryManager.stop()
+        org.thoughtcrime.securesms.developed.REDCore.reset()
         tokenStore.clear()
         org.thoughtcrime.securesms.developed.MasterIntegration.clearApproval(context)
         identity.userId = ""
