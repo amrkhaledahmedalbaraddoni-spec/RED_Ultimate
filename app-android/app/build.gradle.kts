@@ -19,6 +19,9 @@ android {
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     vectorDrawables { useSupportLibrary = true }
+
+    // Configurable server URL — override with -PSERVER_URL=https://your-server.com/
+    buildConfigField("String", "SERVER_URL", "\"${project.findProperty("SERVER_URL") ?: ""}\"")
   }
 
   buildTypes {

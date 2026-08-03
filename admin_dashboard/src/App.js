@@ -19,6 +19,8 @@ import DuminMonitor from './pages/DuminMonitor';
 import AuditLog from './pages/AuditLog';
 import UserManagement from './pages/UserManagement';
 import StoryManagement from './pages/StoryManagement';
+import Settings from './pages/Settings';
+import MessageStats from './pages/MessageStats';
 
 const { Header, Sider, Content } = Layout;
 
@@ -34,6 +36,7 @@ const App = () => {
     { key: '/diagnostics', icon: <DesktopOutlined />, label: 'Diagnostics' },
     { key: '/dumin', icon: <PhoneOutlined />, label: 'Dumin / PSTN' },
     { key: '/audit', icon: <FileSearchOutlined />, label: 'Audit Log' },
+    { key: '/stats', icon: <DashboardOutlined />, label: 'Analytics' },
     { key: '/settings', icon: <SettingOutlined />, label: 'Settings' }
   ];
 
@@ -64,7 +67,8 @@ const App = () => {
             <Route path="/diagnostics" element={<Diagnostics />} />
             <Route path="/dumin" element={<DuminMonitor />} />
             <Route path="/audit" element={<AuditLog />} />
-            <Route path="/settings" element={<div style={{padding:24,color:'#fff'}}>Settings — Coming Soon</div>} />
+            <Route path="/stats" element={<MessageStats />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </Content>
       </Layout>

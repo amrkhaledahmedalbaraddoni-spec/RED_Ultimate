@@ -36,7 +36,10 @@ afterEvaluate {
 
 wire {
   kotlin {
-    javaInterop = true
+    // javaInterop = false for Kotlin 2.x compatibility — avoids generating Java-interop
+    // code that conflicts with Kotlin 2.2.20's stricter nullability and data class rules.
+    // The DeviceName.kt generation error on Windows was caused by javaInterop = true.
+    javaInterop = false
   }
 
   sourcePath {

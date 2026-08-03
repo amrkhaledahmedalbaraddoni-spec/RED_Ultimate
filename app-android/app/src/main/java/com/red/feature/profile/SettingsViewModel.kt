@@ -8,11 +8,13 @@ import com.red.core.delivery.ClientIdentity
 import com.red.feature.auth.AuthApi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.squareup.moshi.JsonClass
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@JsonClass(generateAdapter = true)
 data class ProfileInfo(
     val fullName: String,
     val email: String,

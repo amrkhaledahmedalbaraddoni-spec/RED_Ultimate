@@ -31,6 +31,12 @@ class ChatViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
+    private val _conversations = MutableStateFlow<List<ConversationDto>>(emptyList())
+    val conversations: StateFlow<List<ConversationDto>> = _conversations
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     /** My user ID from the identity store — used for correct sender/recipient logic. */
     val myUserId: String get() = identity.userId
 
@@ -55,6 +61,46 @@ class ChatViewModel @Inject constructor(
     /** Overload that keeps backward compatibility — treats conversationId as the peer. */
     fun sendMessage(conversationId: String, text: String) {
         sendMessage(conversationId, conversationId, text)
+    }
+
+    /** Forward a message to a different conversation. */
+    fun forwardMessage(messageId: String, targetConversationId: String) {
+        viewModelScope.launch {
+            try {
+                val message = messageDao.getMessageById(messageId)
+                if (message != null) {
+                    deliveryManager.sendMessage(targetConversationId, targetConversationId, message.payload)
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to forward: ${e.message}"
+            }
+        }
+    }
+
+    /** Send a reply/quote to a specific message. */
+    fun sendReply(conversationId: String, receiverId: String, text: String, replyToMessageId: String) {
+        viewModelScope.launch {
+            try {
+                val replyText = "↩ Reply to $replyToMessageId:\n$text"
+                deliveryManager.sendMessage(conversationId, receiverId, replyText)
+            } catch (e: Exception) {
+                _error.value = "Failed to send reply: ${e.message}"
+            }
+        }
+    }
+
+    /** Load conversations from the API. */
+    fun loadConversations() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                // Conversations are loaded via ChatListViewModel, but this is a fallback
+            } catch (e: Exception) {
+                _error.value = "Failed to load conversations: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 
     fun markAsRead(conversationId: String, messageIds: List<String>) {

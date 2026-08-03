@@ -51,6 +51,20 @@ interface ChatApi {
 
     @POST("api/messages/typing")
     suspend fun sendTypingIndicator(@Body request: TypingRequest): Response<Unit>
+
+    @GET("api/search/messages")
+    suspend fun searchMessages(
+        @Query("q") query: String,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): Response<List<StoredMessageDto>>
+
+    @GET("api/search")
+    suspend fun searchAll(
+        @Query("q") query: String,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): Response<SearchResultsDto>
 }
 
 @JsonClass(generateAdapter = true)
@@ -90,4 +104,26 @@ data class MarkReadRequest(
 data class TypingRequest(
     val conversationId: String,
     val isTyping: Boolean
+)
+
+@JsonClass(generateAdapter = true)
+data class SearchResultsDto(
+    val messages: List<StoredMessageDto>,
+    val users: List<UserSearchResultDto>,
+    val groups: List<GroupSearchResultDto>,
+    val total: Int
+)
+
+@JsonClass(generateAdapter = true)
+data class UserSearchResultDto(
+    val id: String,
+    val fullName: String,
+    val email: String
+)
+
+@JsonClass(generateAdapter = true)
+data class GroupSearchResultDto(
+    val id: String,
+    val name: String,
+    val memberCount: Int
 )

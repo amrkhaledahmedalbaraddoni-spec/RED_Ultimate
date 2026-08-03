@@ -8,6 +8,8 @@ import com.red.feature.auth.AuthApi
 import com.red.feature.chat.ChatApi
 import com.red.feature.chat.ContactApi
 import com.red.feature.chat.BlockApi
+import com.red.feature.chat.ChatMetaApi
+import com.red.feature.chat.GroupApi
 import com.red.feature.chat.NotificationApi
 import com.red.feature.pstn.DuminApi
 import com.red.feature.stories.StoryApi
@@ -30,7 +32,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-  private const val BASE_URL = "http://192.168.1.50:8080/"
+  private const val BASE_URL = BuildConfig.SERVER_URL.ifBlank { "http://192.168.1.50:8080/" }
 
   @Provides
   @Singleton
@@ -98,6 +100,14 @@ object NetworkModule {
   @Provides
   @Singleton
   fun provideNotificationApi(retrofit: Retrofit): NotificationApi = retrofit.create(NotificationApi::class.java)
+
+  @Provides
+  @Singleton
+  fun provideGroupApi(retrofit: Retrofit): GroupApi = retrofit.create(GroupApi::class.java)
+
+  @Provides
+  @Singleton
+  fun provideChatMetaApi(retrofit: Retrofit): ChatMetaApi = retrofit.create(ChatMetaApi::class.java)
 }
 
 @Module

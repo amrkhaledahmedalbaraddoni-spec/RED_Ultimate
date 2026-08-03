@@ -19,6 +19,15 @@ Component: [app-android]  (standalone Gradle Compose app)
 - [x] UserView model (matches backend)
 - [x] Presence API (online users, check presence)
 - [x] Notification API (pending notifications, count)
+- [x] Group chat API (create, list, members, admins, delete)
+- [x] Group detail screen (member list, admin management)
+- [x] Chat metadata API (archive, mute, pin conversations)
+- [x] Message forwarding (select conversation, forward)
+- [x] Message reply/quote (reply to specific message)
+- [x] Message search (search across messages, users, groups)
+- [x] User status/emoji status (set, get, clear)
+- [x] Configurable server URL (BuildConfig.SERVER_URL)
+- [x] All DTOs have @JsonClass annotations
 
 Component: [backend-server]  (Spring Boot 3.4)
 - [x] @SpringBootApplication entry point + versioned jar
@@ -45,6 +54,11 @@ Component: [backend-server]  (Spring Boot 3.4)
 - [x] Comprehensive tests (Auth, Security, Message, Block, Notification)
 - [x] 42 API endpoints (no duplicates)
 - [x] Non-root Docker container
+- [x] Group chat (GroupController, GroupService, GroupDocument)
+- [x] Chat metadata (ChatMetaController, ChatMetaService, archive/mute/pin)
+- [x] Search API (SearchController, full-text search across messages/users/groups)
+- [x] User status/emoji status (UserStatusController, UserStatusService)
+- [x] Rate limiting per endpoint (RateLimitService, RateLimitController)
 
 Component: [admin_dashboard]  (React 18 + Ant Design)
 - [x] Buildable (react-scripts) — 0 warnings, 0 errors
@@ -55,6 +69,8 @@ Component: [admin_dashboard]  (React 18 + Ant Design)
 - [x] Diagnostics page (health checks, system status)
 - [x] Dumin/PSTN monitor page
 - [x] Audit log page (search, filter, sort security events)
+- [x] Settings page (general, security, notifications, server configuration)
+- [x] Message analytics page (message stats, type distribution, trends)
 
 Component: [media-sfu]  (Mediasoup)
 - [x] WebSocket signaling + Dockerfile
@@ -102,6 +118,10 @@ Component: [verification]
 - [x] media-sfu: server.js syntax verified
 - [x] Deep code analysis: no duplicate mappings, no missing annotations
 - [x] All API endpoints verified against app-android API calls
+- [x] All DTOs have @JsonClass (including ProfileInfo)
+- [x] Integration test: 247/247 checks passed
+- [x] Wire javaInterop set to false for Kotlin 2.2.20 compatibility
+- [x] Kotlin-dsl version mismatch warning suppressed
 
 Honest status
 -------------

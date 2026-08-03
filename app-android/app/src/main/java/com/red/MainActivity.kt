@@ -28,6 +28,9 @@ import com.red.feature.calls.CallLogScreen
 import com.red.feature.calls.VideoCallScreen
 import com.red.feature.chat.ChatListScreen
 import com.red.feature.chat.CreateGroupScreen
+import com.red.feature.chat.ForwardMessageScreen
+import com.red.feature.chat.GroupDetailScreen
+import com.red.feature.chat.MessageSearchScreen
 import com.red.feature.chat.NewChatScreen
 import com.red.feature.contacts.ContactsScreen
 import com.red.feature.profile.SettingsScreen
@@ -210,6 +213,37 @@ private fun MainScreen() {
             userId = "current-user",
             userName = "Me",
             onBack = { navController.popBackStack() }
+          )
+        }
+
+        // Group detail
+        composable("group_detail/{groupId}") { entry ->
+          val groupId = entry.arguments?.getString("groupId") ?: ""
+          GroupDetailScreen(
+            groupId = groupId,
+            onBack = { navController.popBackStack() },
+            onChatWith = { id, name -> navController.navigate("chat_detail/$id") }
+          )
+        }
+
+        // Forward message
+        composable("forward_message/{messageId}/{payload}") { entry ->
+          val messageId = entry.arguments?.getString("messageId") ?: ""
+          val payload = entry.arguments?.getString("payload") ?: ""
+          ForwardMessageScreen(
+            messageId = messageId,
+            messagePayload = payload,
+            onBack = { navController.popBackStack() },
+            onForwarded = { navController.popBackStack() }
+          )
+        }
+
+        // Search
+        composable("search") {
+          MessageSearchScreen(
+            onBack = { navController.popBackStack() },
+            onChatWith = { id, name -> navController.navigate("chat_detail/$id") },
+            onGroupClick = { groupId -> navController.navigate("group_detail/$groupId") }
           )
         }
       }
