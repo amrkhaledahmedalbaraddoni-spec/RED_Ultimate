@@ -144,8 +144,12 @@ checks.append(("merged :app has build.gradle.kts",
 checks.append(("merged :app has AndroidManifest.xml",
     os.path.isfile(p("app","src","main","AndroidManifest.xml"))))
 
-checks.append(("root ApplicationContext owns Hilt (@HiltAndroidApp)",
-    "@HiltAndroidApp" in read("app","src","main","java","org","thoughtcrime","securesms","ApplicationContext.java")))
+checks.append(("RED Hilt application entry exists (Kotlin @HiltAndroidApp)",
+    "@HiltAndroidApp" in read("app", "src", "main", "java", "com", "red", "RedHiltApplication.kt")))
+checks.append(("manifest application points to RedHiltApplication",
+    "com.red.RedHiltApplication" in read("app", "src", "main", "AndroidManifest.xml")))
+checks.append(("RedHiltApplication extends Signal ApplicationContext",
+    "ApplicationContext" in read("app", "src", "main", "java", "com", "red", "RedHiltApplication.kt")))
 
 checks.append(("merged RED app has real UUID v7",
     "0x7000" in read("app","src","main","java","com","red","core","delivery","UuidV7.kt")))
