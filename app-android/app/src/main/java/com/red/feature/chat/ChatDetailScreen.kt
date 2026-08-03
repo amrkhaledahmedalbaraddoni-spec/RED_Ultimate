@@ -228,6 +228,11 @@ private fun MessageContextMenu(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Forward")
                 }
+                TextButton(onClick = { /* Pin message via PinApi */ }) {
+                    Icon(Icons.Default.PushPin, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Pin")
+                }
                 TextButton(onClick = onDelete) {
                     Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
                     Spacer(modifier = Modifier.width(8.dp))

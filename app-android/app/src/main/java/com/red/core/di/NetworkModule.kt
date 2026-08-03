@@ -12,6 +12,8 @@ import com.red.feature.chat.ChatMetaApi
 import com.red.feature.chat.DisappearingMessageApi
 import com.red.feature.chat.GroupApi
 import com.red.feature.chat.NotificationApi
+import com.red.feature.chat.PinApi
+import com.red.feature.chat.RateLimitApi
 import com.red.feature.chat.ReactionApi
 import com.red.feature.chat.UserStatusApi
 import com.red.feature.pstn.DuminApi
@@ -123,6 +125,14 @@ object NetworkModule {
   @Provides
   @Singleton
   fun provideUserStatusApi(retrofit: Retrofit): UserStatusApi = retrofit.create(UserStatusApi::class.java)
+
+  @Provides
+  @Singleton
+  fun providePinApi(retrofit: Retrofit): PinApi = retrofit.create(PinApi::class.java)
+
+  @Provides
+  @Singleton
+  fun provideRateLimitApi(retrofit: Retrofit): RateLimitApi = retrofit.create(RateLimitApi::class.java)
 }
 
 @Module
