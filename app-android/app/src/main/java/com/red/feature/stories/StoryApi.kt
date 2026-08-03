@@ -1,5 +1,6 @@
 package com.red.feature.stories
 
+import com.squareup.moshi.JsonClass
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -18,16 +19,19 @@ interface StoryApi {
     suspend fun upload(@Part file: MultipartBody.Part): Response<MediaUploadResponse>
 }
 
+@JsonClass(generateAdapter = true)
 data class StoryDto(
     val id: String, val ownerId: String, val mediaUrl: String,
     val createdAt: Long, val expiresAt: Long
 )
 
+@JsonClass(generateAdapter = true)
 data class StoryCreateRequest(
     val mediaUrl: String,
     val ttlMinutes: Long = 1440
 )
 
+@JsonClass(generateAdapter = true)
 data class MediaUploadResponse(
     val objectName: String,
     val downloadUrl: String,

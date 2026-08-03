@@ -1,7 +1,7 @@
 package com.red.feature.chat
 
 import com.red.core.models.PublicUserDto
-import com.red.core.models.UserView
+import com.squareup.moshi.JsonClass
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -23,24 +23,24 @@ interface ContactApi {
 }
 
 /**
- * Block / unblock API — mirrors the backend BlockController.
+ * Block / unblock API — mirrors the backend BlockController at /api/blocks.
  */
 interface BlockApi {
-    @POST("api/block/{userId}")
-    suspend fun blockUser(@Path("userId") userId: String): Response<Unit>
+    @POST("api/blocks")
+    suspend fun blockUser(@Body request: Map<String, String>): Response<Unit>
 
-    @DELETE("api/block/{userId}")
-    suspend fun unblockUser(@Path("userId") userId: String): Response<Unit>
+    @DELETE("api/blocks/{blockeeId}")
+    suspend fun unblockUser(@Path("blockeeId") userId: String): Response<Unit>
 
-    @GET("api/block/list")
-    suspend fun getBlockedUsers(): Response<List<PublicUserDto>>
+    @GET("api/blocks")
+    suspend fun getBlockedUsers(): Response<List<String>>
 
-    @GET("api/block/check/{userId}")
+    @GET("api/blocks/check/{userId}")
     suspend fun isBlocked(@Path("userId") userId: String): Response<Map<String, Boolean>>
 }
 
 /**
- * Notification API — mirrors the backend NotificationController.
+ * Notification API — mirrors the backend NotificationController at /api/notifications.
  */
 interface NotificationApi {
     @GET("api/notifications/pending")
@@ -56,12 +56,13 @@ interface NotificationApi {
     suspend fun markAllAsRead(): Response<Unit>
 }
 
+@JsonClass(generateAdapter = true)
 data class NotificationDto(
     val id: String,
     val type: String,       // MESSAGE, CALL, STORY, SYSTEM
     val title: String,
     val body: String,
-    val fromUserId: String?,
+    val fromUserId: String? = null,
     val timestamp: Long,
     val read: Boolean = false
 )

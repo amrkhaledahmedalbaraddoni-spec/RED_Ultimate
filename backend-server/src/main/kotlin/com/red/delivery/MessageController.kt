@@ -1,22 +1,31 @@
 package com.red.delivery
 
+import com.red.websocket.ReadReceiptService
+import com.red.websocket.TypingService
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
 
 /**
- * Message operations: sync, read receipts, delete, and search.
+ * Message operations: sync, read receipts, typing indicators, delete, and search.
  */
 @RestController
 @RequestMapping("/api/messages")
 class MessageController(
-  private val messageService: MessageService
+  private val messageService: MessageService,
+  private val readReceiptService: ReadReceiptService,
+  private val typingService: TypingService
 ) {
 
   data class ReadReceiptRequest(
     val conversationId: String,
     val messageIds: List<String>
+  )
+
+  data class TypingRequest(
+    val conversationId: String,
+    val isTyping: Boolean
   )
 
   // ── Offline sync ─────────────────────────────────────────────────────────
@@ -41,8 +50,15 @@ class MessageController(
   @PostMapping("/read")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   fun markAsRead(authentication: Authentication, @RequestBody req: ReadReceiptRequest) {
-    // The read receipt is handled via WebSocket; this REST endpoint is for
-    // clients that may not have a WebSocket connection at the moment.
+    readReceiptService.markAsRead(authentication.name, req.conversationId, req.messageIds)
+  }
+
+  // ── Typing indicators ────────────────────────────────────────────────────
+
+  @PostMapping("/typing")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  fun sendTyping(authentication: Authentication, @RequestBody req: TypingRequest) {
+    typingService.broadcastTyping(authentication.name, req.conversationId, req.isTyping)
   }
 
   // ── Delete ───────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 package com.red.delivery
 
+import org.springframework.stereotype.Service
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.Indexed
@@ -29,6 +30,7 @@ interface BlockRepository : MongoRepository<BlockDocument, String> {
  * Block/mute service for user-level blocking.
  */
 @org.springframework.stereotype.Service
+@Service
 class BlockService(
   private val blockRepository: BlockRepository
 ) {

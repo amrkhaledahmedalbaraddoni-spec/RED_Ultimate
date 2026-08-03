@@ -18,6 +18,9 @@ class BlockListViewModel @Inject constructor(
     private val _blockedUsers = MutableStateFlow<List<PublicUserDto>>(emptyList())
     val blockedUsers: StateFlow<List<PublicUserDto>> = _blockedUsers
 
+    private val _blockedIds = MutableStateFlow<List<String>>(emptyList())
+    val blockedIds: StateFlow<List<String>> = _blockedIds
+
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
 
@@ -30,7 +33,13 @@ class BlockListViewModel @Inject constructor(
             try {
                 val response = blockApi.getBlockedUsers()
                 if (response.isSuccessful) {
-                    _blockedUsers.value = response.body() ?: emptyList()
+                    // Backend returns List<String> of blocked user IDs
+                    val ids = response.body() ?: emptyList()
+                    _blockedIds.value = ids
+                    // Convert to PublicUserDto for UI display
+                    _blockedUsers.value = ids.map { id ->
+                        PublicUserDto(id = id, fullName = id.take(8) + "…", status = com.red.core.models.UserStatus.APPROVED)
+                    }
                 }
             } catch (e: Exception) {
                 _error.value = "Failed to load: ${e.message}"
@@ -42,7 +51,7 @@ class BlockListViewModel @Inject constructor(
     fun blockUser(userId: String) {
         viewModelScope.launch {
             try {
-                val response = blockApi.blockUser(userId)
+                val response = blockApi.blockUser(mapOf("blockeeId" to userId))
                 if (response.isSuccessful) {
                     load() // Refresh list
                 } else {
@@ -59,6 +68,7 @@ class BlockListViewModel @Inject constructor(
             try {
                 val response = blockApi.unblockUser(userId)
                 if (response.isSuccessful) {
+                    _blockedIds.value = _blockedIds.value.filter { it != userId }
                     _blockedUsers.value = _blockedUsers.value.filter { it.id != userId }
                 }
             } catch (e: Exception) {

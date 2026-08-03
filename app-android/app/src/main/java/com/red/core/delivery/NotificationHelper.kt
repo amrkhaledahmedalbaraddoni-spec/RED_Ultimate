@@ -9,7 +9,6 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
 import com.red.MainActivity
-import com.red.R
 
 /**
  * Helper for creating local notifications for incoming messages, calls,

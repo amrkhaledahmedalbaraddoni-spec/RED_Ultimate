@@ -8,7 +8,6 @@ import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.red.MainActivity
-import com.red.R
 import com.red.core.database.RedDatabase
 import com.red.feature.chat.ChatApi
 import com.red.feature.chat.StoredMessageDto

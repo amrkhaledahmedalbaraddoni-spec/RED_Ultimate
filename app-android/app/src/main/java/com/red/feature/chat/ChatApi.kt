@@ -1,6 +1,7 @@
 package com.red.feature.chat
 
 import com.red.core.models.PublicUserDto
+import com.squareup.moshi.JsonClass
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -52,6 +53,7 @@ interface ChatApi {
     suspend fun sendTypingIndicator(@Body request: TypingRequest): Response<Unit>
 }
 
+@JsonClass(generateAdapter = true)
 data class ConversationDto(
     val conversationId: String,
     val peerId: String,
@@ -59,6 +61,7 @@ data class ConversationDto(
     val messageCount: Long
 )
 
+@JsonClass(generateAdapter = true)
 data class StoredMessageDto(
     val id: String,
     val senderId: String,
@@ -70,17 +73,20 @@ data class StoredMessageDto(
     val sequenceNumber: Long
 )
 
+@JsonClass(generateAdapter = true)
 data class PresenceInfo(
     val userId: String,
     val online: Boolean,
     val lastSeenAt: Long
 )
 
+@JsonClass(generateAdapter = true)
 data class MarkReadRequest(
     val conversationId: String,
     val messageIds: List<String>
 )
 
+@JsonClass(generateAdapter = true)
 data class TypingRequest(
     val conversationId: String,
     val isTyping: Boolean

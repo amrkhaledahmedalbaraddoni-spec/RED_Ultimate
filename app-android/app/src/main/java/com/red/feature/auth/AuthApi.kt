@@ -36,9 +36,6 @@ interface AuthApi {
     @POST("api/auth/change-password")
     suspend fun changePassword(@Body request: Map<String, String>): Response<Map<String, String>>
 
-    @POST("api/auth/change-password")
-    suspend fun changePasswordTyped(@Body request: ChangePasswordRequest): Response<Map<String, String>>
-
     @DELETE("api/auth/account")
     suspend fun deleteAccount(): Response<Unit>
 }

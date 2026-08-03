@@ -58,4 +58,7 @@ interface UserRepository : JpaRepository<UserEntity, String> {
 
   @Query("SELECT u FROM UserEntity u WHERE LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%')) OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :name, '%'))")
   fun findByEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(@Param("email") email: String, @Param("name") name: String): List<UserEntity>
+
+  @Query("SELECT u FROM UserEntity u WHERE u.phoneNumber IN :phones")
+  fun findByPhoneNumbers(@Param("phones") phones: List<String>): List<UserEntity>
 }

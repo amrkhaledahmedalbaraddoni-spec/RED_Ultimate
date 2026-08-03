@@ -1,11 +1,16 @@
 package com.red.websocket
 
-import org.springframework.http.ResponseEntity
+import org.springframework.http.HttpStatus
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
 /**
- * REST endpoint for retrieving pending notifications when a client reconnects.
+ * REST endpoint for retrieving and managing notifications.
+ * Supports:
+ *  - Get pending notifications
+ *  - Get notification count
+ *  - Mark individual notifications as read
+ *  - Mark all notifications as read
  */
 @RestController
 @RequestMapping("/api/notifications")
@@ -14,16 +19,23 @@ class NotificationController(
 ) {
 
   @GetMapping("/pending")
-  fun pending(authentication: Authentication): Map<String, Any> {
-    val notifications = notificationService.getPendingNotifications(authentication.name)
-    val count = notificationService.countPending(authentication.name)
-    return mapOf(
-      "notifications" to notifications,
-      "count" to count
-    )
+  fun pending(authentication: Authentication): List<NotificationService.NotificationEntry> {
+    return notificationService.getPendingNotifications(authentication.name)
   }
 
   @GetMapping("/count")
   fun count(authentication: Authentication): Map<String, Long> =
     mapOf("count" to notificationService.countPending(authentication.name))
+
+  @PostMapping("/mark-read")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  fun markRead(authentication: Authentication, @RequestBody ids: List<String>) {
+    notificationService.markAsRead(authentication.name, ids)
+  }
+
+  @PostMapping("/mark-all-read")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  fun markAllRead(authentication: Authentication) {
+    notificationService.markAllAsRead(authentication.name)
+  }
 }
