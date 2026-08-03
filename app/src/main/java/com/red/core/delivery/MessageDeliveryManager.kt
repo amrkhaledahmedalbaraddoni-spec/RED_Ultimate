@@ -1,6 +1,7 @@
 package com.red.core.delivery
 
 import com.red.core.database.RedDatabase
+import com.red.core.security.SessionManager
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +19,8 @@ class MessageDeliveryManager @Inject constructor(
   private val database: RedDatabase,
   private val client: DevelopedWebSocketClient,
   private val identity: ClientIdentity,
-  private val moshi: Moshi
+  private val moshi: Moshi,
+  private val sessionManager: SessionManager
 ) {
 
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -41,13 +43,19 @@ class MessageDeliveryManager @Inject constructor(
     connected.value = false
   }
 
-  fun sendMessage(conversationId: String, receiverId: String, encryptedPayload: String) {
+  fun sendMessage(
+    conversationId: String,
+    receiverId: String,
+    encryptedPayload: String,
+    type: String = "TEXT"
+  ) {
     val frame = ChatFrame(
       messageId = UuidV7.now(),
       senderId = identity.userId,
       receiverId = receiverId,
       conversationId = conversationId,
-      payload = encryptedPayload
+      payload = encryptedPayload,
+      type = type
     )
     scope.launch {
       val entity = MessageEntity(
@@ -55,9 +63,10 @@ class MessageDeliveryManager @Inject constructor(
         conversationId = conversationId,
         senderId = identity.userId,
         receiverId = receiverId,
-        payload = encryptedPayload,
+        payload = sessionManager.encryptMessage(encryptedPayload),
         timestamp = frame.timestamp,
-        status = MessageStatus.SENDING
+        status = MessageStatus.SENDING,
+        type = type
       )
       database.messageDao().upsert(entity)
       sendLock.withLock {
@@ -116,9 +125,10 @@ class MessageDeliveryManager @Inject constructor(
       conversationId = frame.conversationId,
       senderId = frame.senderId,
       receiverId = identity.userId,
-      payload = frame.payload,
+      payload = sessionManager.encryptMessage(frame.payload),
       timestamp = frame.timestamp,
-      status = MessageStatus.DELIVERED
+      status = MessageStatus.DELIVERED,
+      type = frame.type
     )
     database.messageDao().upsert(entity)
   }

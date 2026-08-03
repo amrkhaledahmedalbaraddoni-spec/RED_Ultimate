@@ -141,16 +141,23 @@ private fun MainScreen() {
         composable(Screen.Phone.route) { DialPadScreen(onDial = { navController.navigate("pstn_call/$it") }) }
         composable(Screen.Contacts.route) {
           ContactsScreen(
-            onChatWith = { userId, name -> navController.navigate("chat_detail/$userId") },
+            onChatWith = { userId, name -> navController.navigate("chat_detail/$userId/$userId") },
             onCallUser = { number -> navController.navigate("pstn_call/$number") }
           )
         }
         composable(Screen.Settings.route) { SettingsScreen() }
 
         // Chat detail
-        composable("chat_detail/{chatId}") { entry ->
+        composable("chat_detail/{chatId}/{peerId}") { entry ->
           val chatId = entry.arguments?.getString("chatId") ?: ""
-          com.red.feature.chat.ChatDetailScreen(conversationId = chatId)
+          val peerId = entry.arguments?.getString("peerId") ?: chatId
+          com.red.feature.chat.ChatDetailScreen(
+            conversationId = chatId,
+            peerId = peerId,
+            peerName = peerId,
+            onVoiceCall = { navController.navigate("video_call/$chatId") },
+            onVideoCall = { navController.navigate("video_call/$chatId") }
+          )
         }
 
         // PSTN call
@@ -187,7 +194,9 @@ private fun MainScreen() {
         composable("new_chat") {
           NewChatScreen(
             onBack = { navController.popBackStack() },
-            onUserSelected = { userId, name -> navController.navigate("chat_detail/$userId") }
+            onUserSelected = { userId, name -> navController.navigate("chat_detail/$userId/$userId") },
+            onCreateGroup = { navController.navigate("create_group") },
+            onOpenContacts = { navController.navigate(Screen.Contacts.route) }
           )
         }
 
@@ -205,7 +214,9 @@ private fun MainScreen() {
           ProfileScreen(
             userId = userId,
             onBack = { navController.popBackStack() },
-            onChat = { id -> navController.navigate("chat_detail/$id") }
+            onChat = { id -> navController.navigate("chat_detail/$id/$id") },
+            onCall = { id -> navController.navigate("video_call/$id") },
+            onVideoCall = { id -> navController.navigate("video_call/$id") }
           )
         }
 
@@ -243,7 +254,7 @@ private fun MainScreen() {
           GroupDetailScreen(
             groupId = groupId,
             onBack = { navController.popBackStack() },
-            onChatWith = { id, name -> navController.navigate("chat_detail/$id") }
+            onChatWith = { id, name -> navController.navigate("chat_detail/$id/$id") }
           )
         }
 
@@ -263,7 +274,7 @@ private fun MainScreen() {
         composable("search") {
           MessageSearchScreen(
             onBack = { navController.popBackStack() },
-            onChatWith = { id, name -> navController.navigate("chat_detail/$id") },
+            onChatWith = { id, name -> navController.navigate("chat_detail/$id/$id") },
             onGroupClick = { groupId -> navController.navigate("group_detail/$groupId") }
           )
         }

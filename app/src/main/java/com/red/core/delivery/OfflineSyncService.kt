@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.red.MainActivity
 import com.red.core.database.RedDatabase
+import com.red.core.security.SessionManager
 import com.red.feature.chat.ChatApi
 import com.red.feature.chat.StoredMessageDto
 import dagger.hilt.android.AndroidEntryPoint
@@ -29,6 +30,7 @@ class OfflineSyncService : Service() {
     @Inject lateinit var chatApi: ChatApi
     @Inject lateinit var database: RedDatabase
     @Inject lateinit var identity: ClientIdentity
+    @Inject lateinit var sessionManager: SessionManager
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -79,7 +81,7 @@ class OfflineSyncService : Service() {
                         conversationId = msg.conversationId,
                         senderId = msg.senderId,
                         receiverId = msg.receiverId,
-                        payload = msg.payload,
+                        payload = sessionManager.encryptMessage(msg.payload),
                         timestamp = msg.timestamp,
                         sequenceNumber = msg.sequenceNumber,
                         status = MessageStatus.DELIVERED
@@ -110,7 +112,8 @@ class OfflineSyncService : Service() {
         suspend fun syncNow(
             chatApi: ChatApi,
             database: RedDatabase,
-            identity: ClientIdentity
+            identity: ClientIdentity,
+            sessionManager: SessionManager
         ): Int {
             val lastSeq = database.messageDao().lastSequence("") ?: 0L
             var syncedCount = 0
@@ -125,7 +128,7 @@ class OfflineSyncService : Service() {
                             conversationId = msg.conversationId,
                             senderId = msg.senderId,
                             receiverId = msg.receiverId,
-                            payload = msg.payload,
+                            payload = sessionManager.encryptMessage(msg.payload),
                             timestamp = msg.timestamp,
                             sequenceNumber = msg.sequenceNumber,
                             status = MessageStatus.DELIVERED
@@ -145,7 +148,8 @@ class OfflineSyncService : Service() {
         suspend fun syncConversation(
             chatApi: ChatApi,
             database: RedDatabase,
-            conversationId: String
+            conversationId: String,
+            sessionManager: SessionManager
         ): Int {
             val lastSeq = database.messageDao().lastSequence(conversationId) ?: 0L
             var syncedCount = 0
@@ -160,7 +164,7 @@ class OfflineSyncService : Service() {
                             conversationId = msg.conversationId,
                             senderId = msg.senderId,
                             receiverId = msg.receiverId,
-                            payload = msg.payload,
+                            payload = sessionManager.encryptMessage(msg.payload),
                             timestamp = msg.timestamp,
                             sequenceNumber = msg.sequenceNumber,
                             status = MessageStatus.DELIVERED

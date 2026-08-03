@@ -52,7 +52,9 @@ Build the merged APK from the repository root:
 
 The RED surface is available from the Signal app settings under **RED Ultimate**; it does not
 create a second launcher icon or a second application ID. For local-server setup, see
-[`RED_LOCAL_SERVER.md`](RED_LOCAL_SERVER.md).
+[`RED_LOCAL_SERVER.md`](RED_LOCAL_SERVER.md). To run the complete verification pipeline on a
+machine with JDK, Node.js, Python, and Docker installed, use `scripts/verify-all.sh` or
+`verify-all.bat`.
 
 ## Contributing Code
 

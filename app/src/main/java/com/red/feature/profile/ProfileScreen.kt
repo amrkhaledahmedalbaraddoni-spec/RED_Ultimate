@@ -29,6 +29,7 @@ fun ProfileScreen(
     onBack: () -> Unit = {},
     onChat: (String) -> Unit = {},
     onCall: (String) -> Unit = {},
+    onVideoCall: (String) -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val profile by viewModel.profile.collectAsState()
@@ -124,7 +125,7 @@ fun ProfileScreen(
                     ActionButton(
                         icon = Icons.Default.Videocam,
                         label = "Video",
-                        onClick = { /* Video call — navigates to video_call/{peerName} route */ }
+                        onClick = { onVideoCall(userId) }
                     )
                 }
 

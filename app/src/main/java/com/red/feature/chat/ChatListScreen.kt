@@ -104,7 +104,7 @@ fun ChatListScreen(navController: NavController? = null) {
                 LazyColumn {
                     items(searchResults) { user ->
                         UserSearchRow(user, onClick = {
-                            navController?.navigate("chat_detail/${user.id}")
+                            navController?.navigate("chat_detail/${user.id}/${user.id}")
                             showSearch = false
                             searchQuery = ""
                             viewModel.clearSearch()
@@ -139,7 +139,7 @@ fun ChatListScreen(navController: NavController? = null) {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(conversations, key = { it.conversationId }) { item ->
                         ConversationRow(item, onClick = {
-                            navController?.navigate("chat_detail/${item.conversationId}")
+                            navController?.navigate("chat_detail/${item.conversationId}/${item.peerId}")
                         })
                         HorizontalDivider()
                     }

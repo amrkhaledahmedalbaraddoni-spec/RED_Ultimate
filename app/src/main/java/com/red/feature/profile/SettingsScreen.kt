@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
+import java.io.File
+import java.util.Locale
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -18,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.red.core.security.BiometricHelper
 import com.red.feature.auth.AuthViewModel
 import com.red.feature.block.BlockListScreen
 
@@ -36,6 +39,7 @@ fun SettingsScreen(
     val notificationEnabled by settingsViewModel.notificationsEnabled.collectAsState()
     val readReceiptsEnabled by settingsViewModel.readReceiptsEnabled.collectAsState()
     val lastSeenEnabled by settingsViewModel.lastSeenEnabled.collectAsState()
+    val mediaAutoDownload by settingsViewModel.mediaAutoDownload.collectAsState()
     var showEditProfile by remember { mutableStateOf(false) }
     var showChangePassword by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
@@ -43,6 +47,7 @@ fun SettingsScreen(
     var showBlockList by remember { mutableStateOf(false) }
     var showStorage by remember { mutableStateOf(false) }
     var showQRCode by remember { mutableStateOf(false) }
+    var appLockEnabled by remember { mutableStateOf(BiometricHelper.isAppLockEnabled(context)) }
 
     if (showBlockList) {
         BlockListScreen(onBack = { showBlockList = false })
@@ -189,11 +194,17 @@ fun SettingsScreen(
                 subtitle = "Manage blocked contacts",
                 onClick = { showBlockList = true }
             )
-            SettingsItem(
+            SettingsToggle(
                 icon = Icons.Default.Fingerprint,
                 title = "App Lock",
-                subtitle = "Require biometric to open app",
-                onClick = { /* Biometric toggle is in SecurityConfig — toggled via BiometricHelper */ }
+                subtitle = if (BiometricHelper.isAvailable(context)) "Require biometric to open app" else "Biometric authentication is unavailable",
+                checked = appLockEnabled,
+                onCheckedChange = { enabled ->
+                    if (!enabled || BiometricHelper.isAvailable(context)) {
+                        appLockEnabled = enabled
+                        BiometricHelper.setAppLockEnabled(context, enabled)
+                    }
+                }
             )
         }
 
@@ -218,11 +229,12 @@ fun SettingsScreen(
                 checked = settingsViewModel.enterKeySends.collectAsState().value,
                 onCheckedChange = { settingsViewModel.toggleEnterKeySends(it) }
             )
-            SettingsItem(
+            SettingsToggle(
                 icon = Icons.Default.PhotoLibrary,
                 title = "Media Auto-Download",
                 subtitle = "When connected to Wi-Fi",
-                onClick = { /* Media auto-download — requires network type detection */ }
+                checked = mediaAutoDownload,
+                onCheckedChange = { settingsViewModel.toggleMediaAutoDownload(it) }
             )
         }
 
@@ -331,7 +343,13 @@ fun SettingsScreen(
 
     // Storage Info Dialog
     if (showStorage) {
-        StorageInfoDialog(onDismiss = { showStorage = false })
+        StorageInfoDialog(
+            onDismiss = { showStorage = false },
+            onClearCache = {
+                context.cacheDir.deleteRecursively()
+                context.externalCacheDir?.deleteRecursively()
+            }
+        )
     }
 
     // QR Code Dialog
@@ -541,27 +559,53 @@ private fun AboutDialog(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun StorageInfoDialog(onDismiss: () -> Unit) {
+private fun StorageInfoDialog(
+    onDismiss: () -> Unit,
+    onClearCache: () -> Unit
+) {
+    val context = LocalContext.current
+    val messageBytes = context.getDatabasePath("red.db").length()
+    val pstnBytes = context.getDatabasePath("pstn.db").length()
+    val cacheBytes = directorySize(context.cacheDir)
+    val totalBytes = messageBytes + pstnBytes + cacheBytes
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Storage Usage") },
         text = {
             Column {
-                StorageRow("Messages", "12.5 MB")
-                StorageRow("Media", "156.3 MB")
-                StorageRow("Stories", "23.1 MB")
-                StorageRow("Cache", "8.7 MB")
+                StorageRow("Messages", formatBytes(messageBytes))
+                StorageRow("PSTN logs", formatBytes(pstnBytes))
+                StorageRow("Cache and temporary files", formatBytes(cacheBytes))
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                StorageRow("Total", "200.6 MB", bold = true)
+                StorageRow("Total", formatBytes(totalBytes), bold = true)
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text("OK") }
         },
         dismissButton = {
-            TextButton(onClick = { /* Cache clearing — handled by system storage manager */ }) { Text("Clear Cache") }
+            TextButton(onClick = {
+                onClearCache()
+                onDismiss()
+            }) { Text("Clear Cache") }
         }
     )
+}
+
+private fun directorySize(file: File): Long {
+    if (!file.exists()) return 0L
+    if (file.isFile) return file.length()
+    return file.listFiles()?.sumOf(::directorySize) ?: 0L
+}
+
+private fun formatBytes(bytes: Long): String {
+    if (bytes < 1024) return "$bytes B"
+    val kb = bytes / 1024.0
+    if (kb < 1024) return "%.1f KB".format(Locale.US, kb)
+    val mb = kb / 1024.0
+    if (mb < 1024) return "%.1f MB".format(Locale.US, mb)
+    return "%.1f GB".format(Locale.US, mb / 1024.0)
 }
 
 @Composable

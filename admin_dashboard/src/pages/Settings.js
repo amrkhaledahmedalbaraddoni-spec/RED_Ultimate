@@ -12,6 +12,11 @@ import {
 const { Title } = Typography;
 const { Option } = Select;
 
+// The dashboard is served by the same Nginx origin as the API. Derive defaults from the
+// current origin so local deployments work on localhost, 10.0.2.2, or any LAN address.
+const defaultApiBaseUrl = window.location.origin;
+const defaultWsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/chat`;
+
 /**
  * Settings page — full system configuration.
  */
@@ -36,7 +41,7 @@ const Settings = () => {
         maxUploadSizeMB: 50,
         enableRegistration: true,
         enableStories: true,
-        enablePstn: true,
+        enablePstn: false,
         enableVideoCalls: true,
         enableGroups: true,
         maintenanceMode: false,
@@ -62,8 +67,8 @@ const Settings = () => {
         notificationRateLimit: 10,
 
         // Server
-        apiBaseUrl: 'http://192.168.1.50:8080',
-        wsUrl: 'ws://192.168.1.50:8080/ws/chat',
+        apiBaseUrl: defaultApiBaseUrl,
+        wsUrl: defaultWsUrl,
         redisUrl: 'redis://redis:6379',
         mongodbUrl: 'mongodb://mongo:27017/red',
         postgresUrl: 'jdbc:postgresql://db:5432/red',

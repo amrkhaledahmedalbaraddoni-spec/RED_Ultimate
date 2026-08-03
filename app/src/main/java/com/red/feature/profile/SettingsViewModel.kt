@@ -53,6 +53,9 @@ class SettingsViewModel @Inject constructor(
     private val _enterKeySends = MutableStateFlow(prefs.getBoolean("enter_key_sends", true))
     val enterKeySends: StateFlow<Boolean> = _enterKeySends
 
+    private val _mediaAutoDownload = MutableStateFlow(prefs.getBoolean("media_auto_download", true))
+    val mediaAutoDownload: StateFlow<Boolean> = _mediaAutoDownload
+
     init {
         loadProfile()
     }
@@ -121,5 +124,10 @@ class SettingsViewModel @Inject constructor(
     fun toggleEnterKeySends(enabled: Boolean) {
         _enterKeySends.value = enabled
         prefs.edit().putBoolean("enter_key_sends", enabled).apply()
+    }
+
+    fun toggleMediaAutoDownload(enabled: Boolean) {
+        _mediaAutoDownload.value = enabled
+        prefs.edit().putBoolean("media_auto_download", enabled).apply()
     }
 }

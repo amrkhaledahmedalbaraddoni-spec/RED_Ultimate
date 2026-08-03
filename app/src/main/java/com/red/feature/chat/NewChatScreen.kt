@@ -27,6 +27,8 @@ import com.red.core.models.PublicUserDto
 fun NewChatScreen(
     onBack: () -> Unit = {},
     onUserSelected: (String, String) -> Unit = { _, _ -> },
+    onCreateGroup: () -> Unit = {},
+    onOpenContacts: () -> Unit = {},
     viewModel: ChatListViewModel = hiltViewModel()
 ) {
     val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
@@ -82,14 +84,14 @@ fun NewChatScreen(
                         icon = Icons.Default.Group,
                         title = "New Group",
                         subtitle = "Create a group conversation",
-                        onClick = { /* Navigate to create_group route */ }
+                        onClick = onCreateGroup
                     )
                     HorizontalDivider()
                     QuickActionRow(
                         icon = Icons.Default.Contacts,
                         title = "Contacts",
                         subtitle = "Choose from your contacts",
-                        onClick = { /* Navigate to contacts */ }
+                        onClick = onOpenContacts
                     )
                 }
             }

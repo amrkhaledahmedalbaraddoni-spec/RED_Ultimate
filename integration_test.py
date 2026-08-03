@@ -340,7 +340,7 @@ if main_activity.exists():
     # Check all routes
     required_routes = [
         "chats", "stories", "calls", "phone", "contacts", "settings",
-        "chat_detail/{chatId}", "pstn_call/{number}", "video_call/{peerName}",
+        "chat_detail/{chatId}/{peerId}", "pstn_call/{number}", "video_call/{peerName}",
         "story_capture", "story_viewer/{urls}", "new_chat", "create_group",
         "profile/{userId}", "block_list", "notifications", "media_gallery/{conversationId}",
         "qr_code"

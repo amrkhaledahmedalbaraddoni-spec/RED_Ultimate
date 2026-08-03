@@ -1,5 +1,6 @@
 package com.red.feature.chat
 
+import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.red.core.delivery.MessageDao
@@ -7,6 +8,7 @@ import com.red.core.delivery.MessageDeliveryManager
 import com.red.core.delivery.MessageEntity
 import com.red.core.delivery.MessageStatus
 import com.red.core.delivery.ClientIdentity
+import com.red.core.security.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +21,11 @@ import javax.inject.Inject
 class ChatViewModel @Inject constructor(
     private val messageDao: MessageDao,
     private val deliveryManager: MessageDeliveryManager,
-    private val identity: ClientIdentity
+    private val identity: ClientIdentity,
+    private val sessionManager: SessionManager,
+    private val chatApi: ChatApi,
+    private val reactionApi: ReactionApi,
+    private val pinApi: PinApi
 ) : ViewModel() {
 
     private val _isTyping = MutableStateFlow(false)
@@ -51,6 +57,9 @@ class ChatViewModel @Inject constructor(
     fun sendMessage(conversationId: String, receiverId: String, text: String) {
         viewModelScope.launch {
             try {
+                // The RED backend currently has no shared-key exchange. Do not encrypt the
+                // network payload with a device-local key: the recipient could not decrypt it.
+                // Signal conversations continue to use Signal's native E2EE path.
                 deliveryManager.sendMessage(conversationId, receiverId, text)
             } catch (e: Exception) {
                 _error.value = "Failed to send: ${e.message}"
@@ -69,7 +78,8 @@ class ChatViewModel @Inject constructor(
             try {
                 val message = messageDao.getMessageById(messageId)
                 if (message != null) {
-                    deliveryManager.sendMessage(targetConversationId, targetConversationId, message.payload)
+                    val payload = displayPayload(message)
+                    deliveryManager.sendMessage(targetConversationId, targetConversationId, payload)
                 }
             } catch (e: Exception) {
                 _error.value = "Failed to forward: ${e.message}"
@@ -113,8 +123,51 @@ class ChatViewModel @Inject constructor(
 
     fun deleteMessage(messageId: String) {
         viewModelScope.launch {
-            // Mark as failed locally; server deletion would be a separate API call
-            messageDao.updateStatus(messageId, MessageStatus.FAILED)
+            try {
+                val response = chatApi.deleteMessage(messageId)
+                if (response.isSuccessful) {
+                    messageDao.deleteMessage(messageId)
+                } else {
+                    _error.value = "Unable to delete message (${response.code()})"
+                }
+            } catch (e: Exception) {
+                _error.value = "Unable to delete message: ${e.message}"
+            }
+        }
+    }
+
+    fun addReaction(messageId: String, emoji: String) {
+        viewModelScope.launch {
+            runCatching { reactionApi.addReaction(AddReactionRequest(messageId, emoji)) }
+                .onFailure { _error.value = "Unable to add reaction: ${it.message}" }
+        }
+    }
+
+    fun pinMessage(messageId: String, conversationId: String) {
+        viewModelScope.launch {
+            runCatching { pinApi.pinMessage(PinMessageRequest(messageId, conversationId)) }
+                .onFailure { _error.value = "Unable to pin message: ${it.message}" }
+        }
+    }
+
+    fun displayPayload(message: MessageEntity): String =
+        runCatching { sessionManager.decryptMessage(message.payload) }
+            .getOrDefault(message.payload)
+
+    fun sendAttachment(conversationId: String, receiverId: String, bytes: ByteArray, type: String) {
+        viewModelScope.launch {
+            try {
+                require(bytes.size <= MAX_ATTACHMENT_BYTES) { "Attachment is larger than 10 MB" }
+                val encoded = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                deliveryManager.sendMessage(
+                    conversationId,
+                    receiverId,
+                    encoded,
+                    type
+                )
+            } catch (e: Exception) {
+                _error.value = "Failed to send attachment: ${e.message}"
+            }
         }
     }
 
@@ -125,5 +178,9 @@ class ChatViewModel @Inject constructor(
 
     fun clearError() {
         _error.value = null
+    }
+
+    private companion object {
+        const val MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
     }
 }

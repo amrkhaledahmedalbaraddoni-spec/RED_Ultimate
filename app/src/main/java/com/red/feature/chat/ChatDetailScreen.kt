@@ -1,5 +1,10 @@
 package com.red.feature.chat
 
+import android.Manifest
+import android.media.MediaRecorder
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -16,7 +21,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
+import androidx.core.content.ContextCompat
+import android.widget.Toast
+import java.io.File
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,9 +50,16 @@ import java.util.*
 @Composable
 fun ChatDetailScreen(
     conversationId: String,
+    peerId: String = "",
     peerName: String = "Chat",
+    onVoiceCall: () -> Unit = {},
+    onVideoCall: () -> Unit = {},
+    onAttach: () -> Unit = {},
+    onVoiceRecord: () -> Unit = {},
     viewModel: ChatViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    val receiverId = peerId.ifBlank { conversationId }
     var textState by remember { mutableStateOf("") }
     val messages by viewModel.getMessages(conversationId).collectAsState(initial = emptyList())
     val isTyping by viewModel.isTyping.collectAsState()
@@ -52,6 +68,80 @@ fun ChatDetailScreen(
     var showMenuFor by remember { mutableStateOf<String?>(null) }
     var showForwardDialog by remember { mutableStateOf(false) }
     var selectedMessageId by remember { mutableStateOf<String?>(null) }
+    val attachmentLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            if (bytes != null) {
+                val type = when (context.contentResolver.getType(uri)?.substringBefore('/')) {
+                    "image" -> "IMAGE"
+                    "video" -> "VIDEO"
+                    else -> "FILE"
+                }
+                viewModel.sendAttachment(conversationId, receiverId, bytes, type)
+            }
+        }
+    }
+    var isRecording by remember { mutableStateOf(false) }
+    var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
+    var recordingFile by remember { mutableStateOf<File?>(null) }
+
+    fun startVoiceRecording() {
+        val file = File(context.cacheDir, "voice_${System.currentTimeMillis()}.m4a")
+        val newRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            MediaRecorder(context)
+        } else {
+            @Suppress("DEPRECATION")
+            MediaRecorder()
+        }
+        runCatching {
+            newRecorder.setAudioSource(MediaRecorder.AudioSource.MIC)
+            newRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            newRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+            newRecorder.setOutputFile(file.absolutePath)
+            newRecorder.prepare()
+            newRecorder.start()
+            recorder = newRecorder
+            recordingFile = file
+            isRecording = true
+        }.onFailure {
+            newRecorder.release()
+            Toast.makeText(context, "Unable to start voice recording", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun stopVoiceRecording() {
+        val currentRecorder = recorder ?: return
+        val file = recordingFile
+        runCatching { currentRecorder.stop() }
+            .onSuccess {
+                file?.takeIf { it.exists() }?.let { voiceFile ->
+                    viewModel.sendAttachment(conversationId, receiverId, voiceFile.readBytes(), "VOICE")
+                    voiceFile.delete()
+                }
+            }
+            .onFailure { Toast.makeText(context, "Voice recording was too short", Toast.LENGTH_SHORT).show() }
+        currentRecorder.release()
+        recorder = null
+        recordingFile = null
+        isRecording = false
+    }
+
+    val microphonePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) startVoiceRecording()
+        else Toast.makeText(context, "Microphone permission is required", Toast.LENGTH_SHORT).show()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            recorder?.let { runCatching { it.stop() } }
+            recorder?.release()
+            recordingFile?.delete()
+        }
+    }
 
     // Auto-scroll to bottom when new messages arrive
     LaunchedEffect(messages.size) {
@@ -94,10 +184,10 @@ fun ChatDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* VoIP Call */ }) {
+                    IconButton(onClick = onVoiceCall) {
                         Icon(Icons.Default.Call, "Voice Call")
                     }
-                    IconButton(onClick = { /* Video Call */ }) {
+                    IconButton(onClick = onVideoCall) {
                         Icon(Icons.Default.Videocam, "Video Call")
                     }
                 }
@@ -132,17 +222,24 @@ fun ChatDetailScreen(
                     onTextChange = { textState = it },
                     onSend = {
                         if (textState.isNotBlank()) {
-                            viewModel.sendMessage(conversationId, textState)
+                            viewModel.sendMessage(conversationId, receiverId, textState)
                             textState = ""
                         }
                     },
                     onAttach = {
-                        // File attachment — requires ActivityResultLauncher for content picker
-                        // and MultipartBody upload via StoryApi.upload()
+                        onAttach()
+                        attachmentLauncher.launch("*/*")
                     },
+                    isRecording = isRecording,
                     onVoiceRecord = {
-                        // Voice message recording — requires MediaRecorder + RECORD_AUDIO permission
-                        // Saves as type="VOICE" via deliveryManager.sendMessage()
+                        onVoiceRecord()
+                        if (isRecording) {
+                            stopVoiceRecording()
+                        } else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                            startVoiceRecording()
+                        } else {
+                            microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }
                     }
                 )
             }
@@ -158,6 +255,7 @@ fun ChatDetailScreen(
             items(messages, key = { it.id }) { msg ->
                 MessageBubble(
                     msg = msg,
+                    text = viewModel.displayPayload(msg),
                     myUserId = viewModel.myUserId,
                     onLongPress = {
                         selectedMessageId = msg.id
@@ -174,8 +272,18 @@ fun ChatDetailScreen(
         if (msg != null) {
             MessageContextMenu(
                 message = msg,
+                messageText = viewModel.displayPayload(msg),
                 onCopy = {
-                    // Copy payload to clipboard
+                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("RED message", viewModel.displayPayload(msg)))
+                    showMenuFor = null
+                },
+                onReaction = { emoji ->
+                    viewModel.addReaction(msgId, emoji)
+                    showMenuFor = null
+                },
+                onPin = {
+                    viewModel.pinMessage(msgId, conversationId)
                     showMenuFor = null
                 },
                 onDelete = {
@@ -191,12 +299,58 @@ fun ChatDetailScreen(
             )
         }
     }
+
+    if (showForwardDialog && selectedMessageId != null) {
+        ForwardMessageDialog(
+            onDismiss = {
+                showForwardDialog = false
+                selectedMessageId = null
+            },
+            onForward = { targetConversationId ->
+                viewModel.forwardMessage(selectedMessageId!!, targetConversationId)
+                showForwardDialog = false
+                selectedMessageId = null
+            }
+        )
+    }
+}
+
+@Composable
+private fun ForwardMessageDialog(
+    onDismiss: () -> Unit,
+    onForward: (String) -> Unit
+) {
+    var targetConversationId by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Forward message") },
+        text = {
+            OutlinedTextField(
+                value = targetConversationId,
+                onValueChange = { targetConversationId = it },
+                label = { Text("Target conversation ID") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onForward(targetConversationId.trim()) },
+                enabled = targetConversationId.isNotBlank()
+            ) { Text("Forward") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }
 
 @Composable
 private fun MessageContextMenu(
     message: MessageEntity,
+    messageText: String,
     onCopy: () -> Unit,
+    onReaction: (String) -> Unit,
+    onPin: () -> Unit,
     onDelete: () -> Unit,
     onForward: () -> Unit,
     onDismiss: () -> Unit
@@ -206,13 +360,20 @@ private fun MessageContextMenu(
         title = { Text("Message Actions") },
         text = {
             Column {
+                Text(
+                    messageText,
+                    maxLines = 3,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 // Quick reaction row
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     for (emoji in listOf("👍", "❤️", "😂", "😮", "😢", "🙏")) {
-                        TextButton(onClick = { /* Add reaction via ReactionApi */ }) {
+                        TextButton(onClick = { onReaction(emoji) }) {
                             Text(emoji, fontSize = 24.sp)
                         }
                     }
@@ -228,7 +389,7 @@ private fun MessageContextMenu(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Forward")
                 }
-                TextButton(onClick = { /* Pin message via PinApi */ }) {
+                TextButton(onClick = onPin) {
                     Icon(Icons.Default.PushPin, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Pin")
@@ -247,7 +408,12 @@ private fun MessageContextMenu(
 }
 
 @Composable
-fun MessageBubble(msg: MessageEntity, myUserId: String, onLongPress: () -> Unit = {}) {
+fun MessageBubble(
+    msg: MessageEntity,
+    text: String = msg.payload,
+    myUserId: String,
+    onLongPress: () -> Unit = {}
+) {
     val isMe = msg.senderId == myUserId
     val alignment = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
     val color = if (isMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
@@ -293,7 +459,7 @@ fun MessageBubble(msg: MessageEntity, myUserId: String, onLongPress: () -> Unit 
                 }
                 Spacer(modifier = Modifier.height(4.dp))
             }
-            Text(msg.payload, color = textColor, fontSize = 15.sp)
+            Text(text, color = textColor, fontSize = 15.sp)
             Row(
                 modifier = Modifier.align(Alignment.End),
                 verticalAlignment = Alignment.CenterVertically,
@@ -332,6 +498,7 @@ fun ChatInput(
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
     onAttach: () -> Unit = {},
+    isRecording: Boolean = false,
     onVoiceRecord: () -> Unit = {}
 ) {
     Surface(tonalElevation = 2.dp) {
@@ -358,7 +525,11 @@ fun ChatInput(
             )
             if (text.isBlank()) {
                 IconButton(onClick = onVoiceRecord) {
-                    Icon(Icons.Default.Mic, "Voice", tint = MaterialTheme.colorScheme.primary)
+                    Icon(
+                        if (isRecording) Icons.Default.Stop else Icons.Default.Mic,
+                        if (isRecording) "Stop recording" else "Voice",
+                        tint = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    )
                 }
             } else {
                 IconButton(onClick = onSend) {
