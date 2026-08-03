@@ -1,7 +1,6 @@
 # RED Ultimate — Merged Android Features
 
-The RED feature surface is compiled inside the single root `:app` application. The old standalone
-`app-android` project was merged and is no longer a second Android application.
+The RED feature surface is compiled inside the single root `:app` application. The old standalone `app-android` project was merged and removed; it is no longer a second Android application.
 
 ## 📊 ملخص التطوير
 

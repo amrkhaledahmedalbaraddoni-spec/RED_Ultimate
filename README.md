@@ -33,8 +33,7 @@ https://community.signalusers.org/c/translation-feedback/
 ## Android application
 
 The repository ships **one Android application only**: the root `:app` module. It contains the
-Signal client and the merged RED Compose features (`com.red`). The previous standalone
-`app-android` project and the unfinished `android/` experiment are no longer Gradle applications.
+Signal client and the merged RED Compose features (`com.red`). The previous standalone `app-android` project and the unfinished `android/` experiment were removed after their buildable RED features were merged.
 
 Build the merged APK from the repository root:
 
