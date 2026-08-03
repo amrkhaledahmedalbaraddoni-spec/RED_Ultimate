@@ -16,7 +16,8 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/admin/security")
 class SecurityController(
   private val approvalService: ApprovalService,
-  private val presence: PresenceService
+  private val presence: PresenceService,
+  private val auditLogService: AuditLogService
 ) {
 
   @PostMapping("/kill-switch/{userId}")
@@ -25,6 +26,7 @@ class SecurityController(
     presence.sessionFor(userId)?.let { session ->
       runCatching { if (session.isOpen) session.close() }
     }
+    auditLogService.log("SYSTEM", "KILL_SWITCH", userId, "User banned and session terminated")
     return mapOf("status" to "REVOKED", "target" to userId)
   }
 }

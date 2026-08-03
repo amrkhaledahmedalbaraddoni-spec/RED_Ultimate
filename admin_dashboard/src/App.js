@@ -6,13 +6,21 @@ import {
   SafetyCertificateOutlined,
   DesktopOutlined,
   PhoneOutlined,
-  MonitorOutlined
+  FileSearchOutlined,
+  TeamOutlined,
+  PictureOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 
 import LiveMonitor from './components/LiveMonitor';
 import Approvals from './pages/Approvals';
 import Diagnostics from './pages/Diagnostics';
 import DuminMonitor from './pages/DuminMonitor';
+import AuditLog from './pages/AuditLog';
+import UserManagement from './pages/UserManagement';
+import StoryManagement from './pages/StoryManagement';
+import Settings from './pages/Settings';
+import MessageStats from './pages/MessageStats';
 
 const { Header, Sider, Content } = Layout;
 
@@ -23,8 +31,13 @@ const App = () => {
   const items = [
     { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
     { key: '/approvals', icon: <SafetyCertificateOutlined />, label: 'Approvals' },
+    { key: '/users', icon: <TeamOutlined />, label: 'Users' },
+    { key: '/stories', icon: <PictureOutlined />, label: 'Stories' },
     { key: '/diagnostics', icon: <DesktopOutlined />, label: 'Diagnostics' },
-    { key: '/dumin', icon: <PhoneOutlined />, label: 'Dumin / PSTN' }
+    { key: '/dumin', icon: <PhoneOutlined />, label: 'Dumin / PSTN' },
+    { key: '/audit', icon: <FileSearchOutlined />, label: 'Audit Log' },
+    { key: '/stats', icon: <DashboardOutlined />, label: 'Analytics' },
+    { key: '/settings', icon: <SettingOutlined />, label: 'Settings' }
   ];
 
   return (
@@ -49,8 +62,13 @@ const App = () => {
           <Routes>
             <Route path="/" element={<LiveMonitor />} />
             <Route path="/approvals" element={<Approvals />} />
+            <Route path="/users" element={<UserManagement />} />
+            <Route path="/stories" element={<StoryManagement />} />
             <Route path="/diagnostics" element={<Diagnostics />} />
             <Route path="/dumin" element={<DuminMonitor />} />
+            <Route path="/audit" element={<AuditLog />} />
+            <Route path="/stats" element={<MessageStats />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </Content>
       </Layout>

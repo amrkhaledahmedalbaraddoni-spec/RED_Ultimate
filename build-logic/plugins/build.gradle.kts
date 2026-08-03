@@ -15,6 +15,10 @@ kotlin {
   }
   compilerOptions {
     suppressWarnings = true
+    // Suppress Kotlin-dsl version mismatch warning (embedded-kotlin 2.3.20 vs project 2.2.20).
+    // The kotlin-dsl plugin uses the Gradle distribution's embedded Kotlin version (2.3.20 in Gradle 9.5.0),
+    // while the project targets Kotlin 2.2.20 for app code. This mismatch is expected and harmless.
+    freeCompilerArgs.add("-Xsuppress-version-warnings")
   }
 }
 

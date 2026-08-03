@@ -19,22 +19,35 @@ services:
       - MINIO_ROOT_USER=redadmin
       - MINIO_ROOT_PASSWORD=redsecret123
       - RED_DUMIN_BASE_URL=http://192.168.1.100:5060
+      - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC
     depends_on:
       db-postgres: { condition: service_healthy }
       db-mongo: { condition: service_healthy }
       cache-redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks: [red-net]
 
   # 2. Media SFU: Mediasoup worker for 4K VoIP (System A)
   media-sfu:
     build: ./media-sfu
     container_name: red-media-sfu
+    restart: always
     environment:
       - PORT=4000
       - ANNOUNCED_IP=${PUBLIC_IP:-127.0.0.1}
     ports:
       - "4000:4000"
       - "40000-40100:40000-40100/udp"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4000', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks: [red-net]
 
   # 3. Relay: COTURN for external NAT traversal
@@ -84,6 +97,7 @@ services:
     image: redis:7
     container_name: red-cache
     restart: always
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     healthcheck: { test: ["CMD", "redis-cli", "ping"], interval: 10s, timeout: 5s, retries: 5 }
     networks: [red-net]
 
@@ -98,6 +112,11 @@ services:
       - MINIO_ROOT_USER=redadmin
       - MINIO_ROOT_PASSWORD=redsecret123
     volumes: ["minio-data:/data"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks: [red-net]
 
   # 9. Admin dashboard (React)
@@ -105,6 +124,11 @@ services:
     build: ./admin_dashboard
     container_name: red-admin-ui
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks: [red-net]
 
   # 10. Reverse proxy (Nginx) — single entry on :80
@@ -112,9 +136,17 @@ services:
     image: nginx:alpine
     container_name: red-proxy
     restart: always
-    ports: ["80:80"]
-    volumes: ["./nginx.conf:/etc/nginx/nginx.conf:ro"]
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.tls.conf:/etc/nginx/nginx-tls.conf:ro
+      - ./certs:/etc/nginx/certs:ro
     depends_on: [backend, admin-panel]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks: [red-net]
 
 volumes:

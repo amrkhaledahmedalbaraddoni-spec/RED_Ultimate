@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">RED</string>
+    <string name="app_name_full">RED Ultimate</string>
+    <string name="channel_messages">Messages</string>
+    <string name="channel_calls">Calls</string>
+    <string name="channel_stories">Stories</string>
+    <string name="notification_new_message">New message</string>
+    <string name="notification_incoming_call">Incoming call</string>
+    <string name="notification_new_story">New story</string>
+    <string name="permission_camera_required">Camera permission is required to capture photos</string>
+    <string name="permission_microphone_required">Microphone permission is required to record voice messages</string>
+    <string name="permission_contacts_required">Contacts permission is required to find friends</string>
+    <string name="permission_notifications_required">Notification permission is required to receive message alerts</string>
+    <string name="error_network">Network error. Please check your connection.</string>
+    <string name="error_auth">Authentication failed. Please try again.</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
 </resources>

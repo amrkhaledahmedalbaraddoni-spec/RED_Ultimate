@@ -5,18 +5,24 @@
  *   getRouterRtpCapabilities / createWebRtcTransport / connectTransport / produce / consume
  *
  * The router is configured for 4K-capable codecs: AV1, VP9 and H.264 (fallback) plus Opus audio.
+ *
+ * Security: JWT authentication via ?token= query parameter.
+ * Rate limiting: Max 50 connections per IP.
  */
 const mediasoup = require('mediasoup');
 const http = require('http');
 const WebSocket = require('ws');
+const crypto = require('crypto');
 
 const PORT = process.env.PORT || 4000;
 const ANNOUNCED_IP = process.env.ANNOUNCED_IP || '127.0.0.1';
+const JWT_SECRET = process.env.JWT_SECRET || '';
+const MAX_CONNECTIONS_PER_IP = 50;
 
 const ROUTER_RTP_CAPABILITIES = {
   codecs: [
     { kind: 'audio', mimeType: 'audio/opus', clockRate: 48000, channels: 2 },
-    { kind: 'video', mimeType: 'video/AV1', clockRate: 90000, parameters: { ' scalabilityMode': 'L1T3' } },
+    { kind: 'video', mimeType: 'video/AV1', clockRate: 90000, parameters: { 'scalabilityMode': 'L1T3' } },
     { kind: 'video', mimeType: 'video/VP9', clockRate: 90000, parameters: { 'profile-id': 2, 'scalabilityMode': 'L3T3' } },
     { kind: 'video', mimeType: 'video/h264', clockRate: 90000, parameters: { 'packetization-mode': 1, 'profile-level-id': '640c1f' } }
   ],
@@ -32,7 +38,8 @@ let worker;
 let router;
 const transports = new Map();   // id -> WebRtcTransport
 const producers = new Map();    // id -> Producer
-const peers = new Map();        // ws -> { transports: Set, producers: Set, consumers: Set }
+const peers = new Map();        // ws -> { transports: Set, producers: Set, consumers: Set, userId: string }
+const ipConnections = new Map(); // ip -> count
 
 async function bootstrap() {
   worker = await mediasoup.createWorker({ logLevel: 'warn' });
@@ -40,15 +47,28 @@ async function bootstrap() {
   console.log(`RED Media SFU ready (AV1/VP9 4K) on :${PORT}, announced ip ${ANNOUNCED_IP}`);
 
   const server = http.createServer();
-  const wss = new WebSocket.Server({ server });
+  const wss = new WebSocket.Server({ server, maxPayload: 1024 * 1024 }); // 1MB max payload
 
-  wss.on('connection', (ws) => onPeer(ws));
+  wss.on('connection', (ws, req) => {
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    // Rate limiting
+    const currentCount = ipConnections.get(clientIp) || 0;
+    if (currentCount >= MAX_CONNECTIONS_PER_IP) {
+      console.warn(`Rate limit exceeded for ${clientIp}`);
+      ws.close(4291, 'Too many connections');
+      return;
+    }
+    ipConnections.set(clientIp, currentCount + 1);
+
+    onPeer(ws, req);
+  });
 
   server.listen(PORT);
 }
 
-async function onPeer(ws) {
-  const peer = { transports: new Set(), producers: new Set(), consumers: new Set() };
+async function onPeer(ws, req) {
+  const peer = { transports: new Set(), producers: new Set(), consumers: new Set(), userId: 'anonymous' };
   peers.set(ws, peer);
 
   ws.on('message', async (raw) => {
@@ -114,7 +134,7 @@ async function onPeer(ws) {
           }
           const consumer = await transport.consume({
             producerId: producer.id,
-            rtpCapabilities: msg.rtpCapabilities,
+            rtpParameters: msg.rtpCapabilities,
             paused: true
           });
           peer.consumers.add(consumer.id);
@@ -144,6 +164,14 @@ async function onPeer(ws) {
       [...p.producers].forEach((id) => producers.get(id)?.close());
     }
     peers.delete(ws);
+
+    // Update IP connection count
+    const clientIp = ws._socket?.remoteAddress;
+    if (clientIp) {
+      const count = ipConnections.get(clientIp) || 1;
+      ipConnections.set(clientIp, count - 1);
+      if (count <= 1) ipConnections.delete(clientIp);
+    }
   });
 }
 

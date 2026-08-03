@@ -5,6 +5,8 @@ package com.red.proto;
 option java_package = "com.red.proto";
 option java_outer_classname = "ChatProtos";
 
+// ── Core message types ─────────────────────────────────────────────────────
+
 message ChatMessage {
     string id = 1;              // UUID v7
     string sender_id = 2;
@@ -22,15 +24,91 @@ enum MessageType {
     VIDEO = 2;
     AUDIO = 3;
     FILE = 4;
+    SYSTEM = 5;     // System messages (user joined, left, etc.)
+    TYPING = 6;     // Typing indicator
+    READ = 7;       // Read receipt
 }
+
+// ── Acknowledgments ────────────────────────────────────────────────────────
 
 message MessageAck {
     string message_id = 1;
     AckStatus status = 2;
+    int64 sequence_number = 3;
 }
 
 enum AckStatus {
     SENT = 0;
     DELIVERED = 1;
     READ = 2;
+    STORED = 3;
+    DUPLICATE = 4;
+    FAILED = 5;
+}
+
+// ── Read receipts ──────────────────────────────────────────────────────────
+
+message ReadReceipt {
+    string conversation_id = 1;
+    string reader_id = 2;
+    repeated string message_ids = 3;
+    int64 timestamp = 4;
+}
+
+// ── Typing indicators ──────────────────────────────────────────────────────
+
+message TypingIndicator {
+    string conversation_id = 1;
+    string sender_id = 2;
+    bool is_typing = 3;
+    int64 timestamp = 4;
+}
+
+// ── Presence ───────────────────────────────────────────────────────────────
+
+message PresenceUpdate {
+    string user_id = 1;
+    bool online = 2;
+    int64 timestamp = 3;
+}
+
+// ── Stories ────────────────────────────────────────────────────────────────
+
+message Story {
+    string id = 1;
+    string owner_id = 2;
+    string media_url = 3;
+    int64 created_at = 4;
+    int64 expires_at = 5;
+}
+
+// ── User profile ───────────────────────────────────────────────────────────
+
+message UserProfile {
+    string id = 1;
+    string full_name = 2;
+    string email = 3;
+    string phone_number = 4;
+    string avatar_url = 5;
+    string status = 6;     // PENDING, APPROVED, REJECTED, BANNED
+    string role = 7;       // USER, ADMIN
+    int64 last_seen_at = 8;
+}
+
+// ── Blocking ───────────────────────────────────────────────────────────────
+
+message BlockAction {
+    string blocker_id = 1;
+    string blockee_id = 2;
+    bool blocked = 3;       // true = block, false = unblock
+    int64 timestamp = 4;
+}
+
+// ── Notifications ──────────────────────────────────────────────────────────
+
+message PushNotification {
+    string user_id = 1;
+    string type = 2;        // MESSAGE, STORY, CALL, SYSTEM
+    string content = 3;
+    int64 timestamp = 4;
 }

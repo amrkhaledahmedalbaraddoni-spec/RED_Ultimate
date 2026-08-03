@@ -1,12 +1,8 @@
 package com.red.auth
 
+import com.red.security.AuditLogService
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 /**
  * Admin-only endpoints for the approval workflow and account lifecycle. Secured by
@@ -16,7 +12,8 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/admin/users")
 class AdminApprovalController(
   private val approvalService: ApprovalService,
-  private val userRepository: UserRepository
+  private val userRepository: UserRepository,
+  private val auditLogService: AuditLogService
 ) {
 
   @GetMapping("/pending")
@@ -26,22 +23,32 @@ class AdminApprovalController(
   fun all(): List<UserView> = userRepository.findAll().map { UserView.from(it) }
 
   @PostMapping("/{userId}/approve")
-  fun approve(@PathVariable userId: String): ResponseEntity<UserView> =
-    ResponseEntity.ok(UserView.from(approvalService.approve(userId)))
+  fun approve(@PathVariable userId: String): ResponseEntity<UserView> {
+    val result = approvalService.approve(userId)
+    auditLogService.log(userId, "USER_APPROVED", userId)
+    return ResponseEntity.ok(UserView.from(result))
+  }
 
   @PostMapping("/{userId}/reject")
-  fun reject(@PathVariable userId: String): ResponseEntity<UserView> =
-    ResponseEntity.ok(UserView.from(approvalService.reject(userId)))
+  fun reject(@PathVariable userId: String): ResponseEntity<UserView> {
+    val result = approvalService.reject(userId)
+    auditLogService.log(userId, "USER_REJECTED", userId)
+    return ResponseEntity.ok(UserView.from(result))
+  }
 
   @PostMapping("/{userId}/ban")
-  fun ban(@PathVariable userId: String): ResponseEntity<UserView> =
-    ResponseEntity.ok(UserView.from(approvalService.ban(userId)))
+  fun ban(@PathVariable userId: String): ResponseEntity<UserView> {
+    val result = approvalService.ban(userId)
+    auditLogService.log(userId, "USER_BANNED", userId)
+    return ResponseEntity.ok(UserView.from(result))
+  }
 
   /** Promote a user to admin (e.g. the first operator). */
   @PostMapping("/{userId}/promote")
   fun promote(@PathVariable userId: String): ResponseEntity<Any> {
     val user = userRepository.findById(userId).orElseThrow()
     user.role = UserRole.ADMIN
+    auditLogService.log(userId, "USER_PROMOTED", userId)
     return ResponseEntity.ok(UserView.from(userRepository.save(user)))
   }
 
@@ -58,6 +65,7 @@ class AdminApprovalController(
       "REJECTED" -> approvalService.reject(user.id)
       else -> approvalService.approve(user.id)
     }
+    auditLogService.log(email, "USER_STATUS_CHANGED", user.id, "status=$status")
     return ResponseEntity.ok(UserView.from(updated))
   }
 }

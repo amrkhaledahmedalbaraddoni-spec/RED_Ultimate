@@ -3,6 +3,9 @@ package com.red.core.di
 import android.content.Context
 import androidx.room.Room
 import com.red.core.database.RedDatabase
+import com.red.core.database.StoryDao
+import com.red.core.database.ContactDao
+import com.red.core.database.ConversationDao
 import com.red.core.delivery.MessageDao
 import com.red.feature.pstn.PstnDao
 import com.red.feature.pstn.PstnDatabase
@@ -26,6 +29,15 @@ object DatabaseModule {
 
   @Provides
   fun provideMessageDao(db: RedDatabase): MessageDao = db.messageDao()
+
+  @Provides
+  fun provideStoryDao(db: RedDatabase): StoryDao = db.storyDao()
+
+  @Provides
+  fun provideContactDao(db: RedDatabase): ContactDao = db.contactDao()
+
+  @Provides
+  fun provideConversationDao(db: RedDatabase): ConversationDao = db.conversationDao()
 
   @Provides
   @Singleton

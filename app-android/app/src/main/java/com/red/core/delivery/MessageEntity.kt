@@ -17,7 +17,8 @@ data class MessageEntity(
   val payload: String,
   val timestamp: Long,
   val sequenceNumber: Long = 0,
-  val status: MessageStatus = MessageStatus.SENDING
+  val status: MessageStatus = MessageStatus.SENDING,
+  val type: String = "TEXT"  // TEXT, IMAGE, VIDEO, FILE, VOICE
 )
 
 @Dao
@@ -33,4 +34,19 @@ interface MessageDao {
 
   @Query("SELECT MAX(sequenceNumber) FROM messages WHERE conversationId = :conversationId")
   suspend fun lastSequence(conversationId: String): Long?
+
+  @Query("SELECT * FROM messages WHERE id = :id LIMIT 1")
+  suspend fun getMessage(id: String): MessageEntity?
+
+  @Query("SELECT * FROM messages WHERE id = :id LIMIT 1")
+  suspend fun getMessageById(id: String): MessageEntity?
+
+  @Query("DELETE FROM messages WHERE id = :id")
+  suspend fun deleteMessage(id: String)
+
+  @Query("SELECT COUNT(*) FROM messages WHERE conversationId = :conversationId AND senderId != :myUserId AND status != :readStatus")
+  suspend fun getUnreadCount(conversationId: String, myUserId: String, readStatus: MessageStatus = MessageStatus.READ): Int
+
+  @Query("SELECT * FROM messages WHERE conversationId = :conversationId AND (type = 'IMAGE' OR type = 'VIDEO' OR type = 'FILE') ORDER BY timestamp DESC")
+  fun getMediaMessages(conversationId: String): Flow<List<MessageEntity>>
 }

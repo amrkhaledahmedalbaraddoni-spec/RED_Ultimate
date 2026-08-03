@@ -26,14 +26,14 @@ fun WelcomeScreen(
         Spacer(modifier = Modifier.height(64.dp))
         
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            // Placeholder for Logo
+            // Logo
             Surface(
                 modifier = Modifier.size(120.dp),
                 color = MaterialTheme.colorScheme.primaryContainer,
                 shape = MaterialTheme.shapes.large
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text("DC", fontSize = 48.sp, fontWeight = FontWeight.Black)
+                    Text("🔴", fontSize = 48.sp, fontWeight = FontWeight.Black)
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
