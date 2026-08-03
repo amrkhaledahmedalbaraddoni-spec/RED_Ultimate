@@ -50,12 +50,6 @@ class UserController(
     return results.filter { it.id != authentication.name && it.status == UserStatus.APPROVED }
       .map { PublicUserView(it.id, it.fullName, it.status) }
   }
-
-  @GetMapping("/online")
-  fun onlineUsers(authentication: Authentication): List<PublicUserView> {
-    // Delegate to presence service via a separate endpoint
-    return emptyList()
-  }
 }
 
 data class PublicUserView(
