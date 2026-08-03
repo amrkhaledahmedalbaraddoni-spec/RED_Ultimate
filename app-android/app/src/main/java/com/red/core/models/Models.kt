@@ -11,6 +11,8 @@ data class User(
     val fullName: String,
     val status: UserStatus,
     val role: String = "USER",
+    val phoneNumber: String? = null,
+    val avatarUrl: String? = null,
     val createdAt: Long = 0
 )
 
@@ -40,5 +42,19 @@ data class UserView(
     val status: UserStatus,
     val role: String,
     val phoneNumber: String? = null,
+    val avatarUrl: String? = null,
     val createdAt: Long = 0
+)
+
+@JsonClass(generateAdapter = true)
+data class ChangePasswordRequest(
+    val currentPassword: String,
+    val newPassword: String
+)
+
+@JsonClass(generateAdapter = true)
+data class UpdateProfileRequest(
+    val fullName: String? = null,
+    val phoneNumber: String? = null,
+    val avatarUrl: String? = null
 )

@@ -14,8 +14,8 @@ android {
     applicationId = "com.red.sovereign"
     minSdk = 26
     targetSdk = 35
-    versionCode = 1
-    versionName = "1.0.0"
+    versionCode = 2
+    versionName = "1.1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     vectorDrawables { useSupportLibrary = true }
@@ -23,8 +23,13 @@ android {
 
   buildTypes {
     release {
-      isMinifyEnabled = false
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+    }
+    debug {
+      isMinifyEnabled = false
+      applicationIdSuffix = ".debug"
     }
   }
 
@@ -81,6 +86,7 @@ dependencies {
   implementation("com.squareup.moshi:moshi:1.15.1")
   implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
+  implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
   // WorkManager
   implementation("androidx.work:work-runtime-ktx:2.10.0")
@@ -97,8 +103,17 @@ dependencies {
   implementation("androidx.camera:camera-lifecycle:1.4.1")
   implementation("androidx.camera:camera-view:1.4.1")
 
+  // Biometric
+  implementation("androidx.biometric:biometric:1.1.0")
+
+  // DataStore (for preferences)
+  implementation("androidx.datastore:datastore-preferences:1.1.1")
+
   // Testing
   testImplementation("junit:junit:4.13.2")
+  testImplementation("org.mockito:mockito-core:5.14.2")
+  testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+  testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
   androidTestImplementation(composeBom)
   androidTestImplementation("androidx.compose.ui:ui-test-junit4")
   androidTestImplementation("androidx.test.ext:junit:1.2.1")

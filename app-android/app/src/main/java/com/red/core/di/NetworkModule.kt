@@ -6,6 +6,9 @@ import com.red.core.delivery.DevelopedWebSocketClient
 import com.red.core.delivery.DevelopedWebSocketClientImpl
 import com.red.feature.auth.AuthApi
 import com.red.feature.chat.ChatApi
+import com.red.feature.chat.ContactApi
+import com.red.feature.chat.BlockApi
+import com.red.feature.chat.NotificationApi
 import com.red.feature.pstn.DuminApi
 import com.red.feature.stories.StoryApi
 import com.squareup.moshi.Moshi
@@ -17,8 +20,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
@@ -44,8 +49,18 @@ object NetworkModule {
 
   @Provides
   @Singleton
-  fun provideOkHttp(authInterceptor: Interceptor): OkHttpClient = OkHttpClient.Builder()
+  fun provideLoggingInterceptor(): HttpLoggingInterceptor = HttpLoggingInterceptor().apply {
+    level = HttpLoggingInterceptor.Level.BASIC
+  }
+
+  @Provides
+  @Singleton
+  fun provideOkHttp(authInterceptor: Interceptor, loggingInterceptor: HttpLoggingInterceptor): OkHttpClient = OkHttpClient.Builder()
     .addInterceptor(authInterceptor)
+    .addInterceptor(loggingInterceptor)
+    .connectTimeout(30, TimeUnit.SECONDS)
+    .readTimeout(30, TimeUnit.SECONDS)
+    .writeTimeout(30, TimeUnit.SECONDS)
     .build()
 
   @Provides
@@ -71,6 +86,18 @@ object NetworkModule {
   @Provides
   @Singleton
   fun provideStoryApi(retrofit: Retrofit): StoryApi = retrofit.create(StoryApi::class.java)
+
+  @Provides
+  @Singleton
+  fun provideContactApi(retrofit: Retrofit): ContactApi = retrofit.create(ContactApi::class.java)
+
+  @Provides
+  @Singleton
+  fun provideBlockApi(retrofit: Retrofit): BlockApi = retrofit.create(BlockApi::class.java)
+
+  @Provides
+  @Singleton
+  fun provideNotificationApi(retrofit: Retrofit): NotificationApi = retrofit.create(NotificationApi::class.java)
 }
 
 @Module

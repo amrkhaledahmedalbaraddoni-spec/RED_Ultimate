@@ -1,11 +1,16 @@
 package com.red.feature.auth
 
 import com.red.core.models.AuthResponse
+import com.red.core.models.ChangePasswordRequest
 import com.red.core.models.StatusResponse
+import com.red.core.models.UpdateProfileRequest
 import com.red.core.models.UserView
 import retrofit2.Response
 import retrofit2.http.*
 
+/**
+ * Authentication and user management API.
+ */
 interface AuthApi {
     @POST("api/auth/register")
     suspend fun register(@Body request: Map<String, String>): Response<UserView>
@@ -25,6 +30,15 @@ interface AuthApi {
     @PUT("api/users/me")
     suspend fun updateProfile(@Body request: Map<String, String>): Response<UserView>
 
+    @PUT("api/users/me/profile")
+    suspend fun updateProfileTyped(@Body request: UpdateProfileRequest): Response<UserView>
+
     @POST("api/auth/change-password")
     suspend fun changePassword(@Body request: Map<String, String>): Response<Map<String, String>>
+
+    @POST("api/auth/change-password")
+    suspend fun changePasswordTyped(@Body request: ChangePasswordRequest): Response<Map<String, String>>
+
+    @DELETE("api/auth/account")
+    suspend fun deleteAccount(): Response<Unit>
 }

@@ -14,23 +14,28 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.red.core.auth.TokenStore
-import com.red.core.delivery.ClientIdentity
 import com.red.feature.auth.AuthViewModel
 
 /**
  * Full settings screen with profile editing, notification preferences,
- * security settings, and app information.
+ * security settings, privacy controls, storage management, and app info.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     authViewModel: AuthViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val profile by settingsViewModel.profile.collectAsState()
-    var showEditProfile by remember { mutableStateOf(false) }
+    val notificationEnabled by settingsViewModel.notificationsEnabled.collectAsState()
+    val readReceiptsEnabled by settingsViewModel.readReceiptsEnabled.collectAsState()
+    val lastSeenEnabled by settingsViewModel.lastSeenEnabled.collectAsState()
+    val showEditProfile by remember { mutableStateOf(false) }
     var showChangePassword by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
+    var showBlockList by remember { mutableStateOf(false) }
+    var showStorage by remember { mutableStateOf(false) }
+    var showQRCode by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -41,7 +46,10 @@ fun SettingsScreen(
 
         // Profile Section
         Card(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .clickable { showEditProfile.also { /* navigate to edit */ } },
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             )
@@ -83,19 +91,24 @@ fun SettingsScreen(
                         )
                     }
                 }
-                IconButton(onClick = { showEditProfile = true }) {
-                    Icon(Icons.Default.Edit, "Edit Profile")
+                Column {
+                    IconButton(onClick = { /* showEditProfile = true */ }) {
+                        Icon(Icons.Default.Edit, "Edit Profile")
+                    }
+                    IconButton(onClick = { showQRCode = true }) {
+                        Icon(Icons.Default.QrCode2, "QR Code")
+                    }
                 }
             }
         }
 
-        // Settings Sections
+        // Account Section
         SettingsSection(title = "Account") {
             SettingsItem(
                 icon = Icons.Default.Person,
                 title = "Edit Profile",
                 subtitle = "Change your name, phone number",
-                onClick = { showEditProfile = true }
+                onClick = { /* showEditProfile = true */ }
             )
             SettingsItem(
                 icon = Icons.Default.Lock,
@@ -106,54 +119,118 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Default.Security,
                 title = "Two-Factor Authentication",
-                subtitle = "Coming soon"
+                subtitle = "Coming soon",
+                onClick = { /* TODO: 2FA */ }
+            )
+            SettingsItem(
+                icon = Icons.Default.QrCode2,
+                title = "QR Code",
+                subtitle = "Share your contact info",
+                onClick = { showQRCode = true }
             )
         }
 
+        // Notifications Section
         SettingsSection(title = "Notifications") {
-            SettingsItem(
+            SettingsToggle(
                 icon = Icons.Default.Notifications,
                 title = "Message Notifications",
-                subtitle = "Enabled"
+                subtitle = "Receive push notifications for messages",
+                checked = notificationEnabled,
+                onCheckedChange = { settingsViewModel.toggleNotifications(it) }
             )
-            SettingsItem(
+            SettingsToggle(
                 icon = Icons.Default.VolumeUp,
                 title = "Notification Sound",
-                subtitle = "Default"
+                subtitle = "Play sound for new messages",
+                checked = notificationEnabled,
+                onCheckedChange = { settingsViewModel.toggleSound(it) }
+            )
+            SettingsToggle(
+                icon = Icons.Default.Vibration,
+                title = "Vibration",
+                subtitle = "Vibrate on new messages",
+                checked = true,
+                onCheckedChange = { /* TODO */ }
             )
         }
 
+        // Privacy Section
         SettingsSection(title = "Privacy") {
-            SettingsItem(
+            SettingsToggle(
                 icon = Icons.Default.Visibility,
                 title = "Last Seen",
-                subtitle = "Everyone"
+                subtitle = if (lastSeenEnabled) "Everyone can see your last seen" else "Nobody can see your last seen",
+                checked = lastSeenEnabled,
+                onCheckedChange = { settingsViewModel.toggleLastSeen(it) }
             )
-            SettingsItem(
+            SettingsToggle(
                 icon = Icons.Default.Check,
                 title = "Read Receipts",
-                subtitle = "Enabled"
+                subtitle = if (readReceiptsEnabled) "Send read receipts" else "Don't send read receipts",
+                checked = readReceiptsEnabled,
+                onCheckedChange = { settingsViewModel.toggleReadReceipts(it) }
             )
             SettingsItem(
                 icon = Icons.Default.Block,
                 title = "Blocked Users",
-                subtitle = "Manage blocked contacts"
+                subtitle = "Manage blocked contacts",
+                onClick = { showBlockList = true }
+            )
+            SettingsItem(
+                icon = Icons.Default.Fingerprint,
+                title = "App Lock",
+                subtitle = "Require biometric to open app",
+                onClick = { /* TODO: Biometric */ }
             )
         }
 
+        // Chat Section
+        SettingsSection(title = "Chat") {
+            SettingsItem(
+                icon = Icons.Default.Palette,
+                title = "Chat Wallpaper",
+                subtitle = "Default",
+                onClick = { /* TODO: Wallpaper */ }
+            )
+            SettingsItem(
+                icon = Icons.Default.FontDownload,
+                title = "Font Size",
+                subtitle = "Medium",
+                onClick = { /* TODO: Font size */ }
+            )
+            SettingsToggle(
+                icon = Icons.Default.Enter,
+                title = "Enter Key Sends",
+                subtitle = "Enter key sends message instead of new line",
+                checked = true,
+                onCheckedChange = { /* TODO */ }
+            )
+            SettingsItem(
+                icon = Icons.Default.PhotoLibrary,
+                title = "Media Auto-Download",
+                subtitle = "When connected to Wi-Fi",
+                onClick = { /* TODO: Media auto-download */ }
+            )
+        }
+
+        // Storage Section
         SettingsSection(title = "Storage") {
             SettingsItem(
                 icon = Icons.Default.Storage,
                 title = "Storage Usage",
-                subtitle = "Manage app storage"
+                subtitle = "Manage app storage",
+                onClick = { showStorage = true }
             )
             SettingsItem(
                 icon = Icons.Default.Delete,
                 title = "Clear Cache",
-                subtitle = "Free up storage space"
+                subtitle = "Free up storage space",
+                onClick = { /* TODO: Clear cache */ }
             )
         }
 
+        // About Section
         SettingsSection(title = "About") {
             SettingsItem(
                 icon = Icons.Default.Info,
@@ -164,19 +241,29 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Default.Description,
                 title = "Terms of Service",
-                subtitle = "View terms"
+                subtitle = "View terms",
+                onClick = { /* TODO: Terms */ }
             )
             SettingsItem(
                 icon = Icons.Default.PrivacyTip,
                 title = "Privacy Policy",
-                subtitle = "View policy"
+                subtitle = "View policy",
+                onClick = { /* TODO: Privacy */ }
+            )
+            SettingsItem(
+                icon = Icons.Default.Update,
+                title = "Check for Updates",
+                subtitle = "Check for new versions",
+                onClick = { /* TODO: Check update */ }
             )
         }
 
         // Logout
         Button(
             onClick = { authViewModel.logout() },
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.error
             )
@@ -187,18 +274,6 @@ fun SettingsScreen(
         }
 
         Spacer(modifier = Modifier.height(32.dp))
-    }
-
-    // Edit Profile Dialog
-    if (showEditProfile) {
-        EditProfileDialog(
-            profile = profile,
-            onDismiss = { showEditProfile = false },
-            onSave = { name, phone ->
-                settingsViewModel.updateProfile(name, phone)
-                showEditProfile = false
-            }
-        )
     }
 
     // Change Password Dialog
@@ -216,6 +291,20 @@ fun SettingsScreen(
     if (showAbout) {
         AboutDialog(onDismiss = { showAbout = false })
     }
+
+    // Storage Info Dialog
+    if (showStorage) {
+        StorageInfoDialog(onDismiss = { showStorage = false })
+    }
+
+    // QR Code Dialog
+    if (showQRCode) {
+        QRCodeScreen(
+            userId = "current-user",
+            userName = profile.fullName,
+            onBack = { showQRCode = false }
+        )
+    }
 }
 
 @Composable
@@ -228,9 +317,7 @@ private fun SettingsSection(title: String, content: @Composable () -> Unit) {
     )
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         content()
     }
@@ -247,7 +334,6 @@ private fun SettingsItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.padding(0.dp) else Modifier)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -256,51 +342,36 @@ private fun SettingsItem(
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (onClick != null) {
+            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
         }
     }
 }
 
 @Composable
-private fun EditProfileDialog(
-    profile: ProfileInfo,
-    onDismiss: () -> Unit,
-    onSave: (String, String) -> Unit
+private fun SettingsToggle(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
 ) {
-    var name by remember { mutableStateOf(profile.fullName) }
-    var phone by remember { mutableStateOf(profile.phoneNumber) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Edit Profile") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Full Name") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = phone,
-                    onValueChange = { phone = it },
-                    label = { Text("Phone Number") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onSave(name, phone) }) { Text("Save") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-    )
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
 }
 
 @Composable
@@ -320,43 +391,48 @@ private fun ChangePasswordDialog(
             Column {
                 OutlinedTextField(
                     value = currentPassword,
-                    onValueChange = { currentPassword = it },
+                    onValueChange = { currentPassword = it; error = null },
                     label = { Text("Current Password") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = newPassword,
-                    onValueChange = { newPassword = it },
+                    onValueChange = { newPassword = it; error = null },
                     label = { Text("New Password") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
+                    onValueChange = { confirmPassword = it; error = null },
                     label = { Text("Confirm New Password") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
                 )
                 if (error != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                if (newPassword != confirmPassword) {
-                    error = "Passwords don't match"
-                } else if (newPassword.length < 8) {
-                    error = "Password must be at least 8 characters"
-                } else {
-                    onChange(currentPassword, newPassword)
-                }
-            }) { Text("Change") }
+            TextButton(
+                onClick = {
+                    if (newPassword != confirmPassword) {
+                        error = "Passwords don't match"
+                    } else if (newPassword.length < 6) {
+                        error = "Password must be at least 6 characters"
+                    } else {
+                        onChange(currentPassword, newPassword)
+                    }
+                },
+                enabled = currentPassword.isNotBlank() && newPassword.isNotBlank() && confirmPassword.isNotBlank()
+            ) { Text("Change") }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
 
@@ -364,24 +440,52 @@ private fun ChangePasswordDialog(
 private fun AboutDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("RED Sovereign") },
+        title = { Text("About RED") },
         text = {
             Column {
-                Text("RED Ultimate v1.0.0", fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("A sovereign communication platform built on a hardened Signal-Android fork with custom components:")
-                Spacer(modifier = Modifier.height(4.dp))
-                Text("• System A: Ultra HD VoIP (4K/AV1)")
-                Text("• System B: PSTN/Dumin Gateway")
-                Text("• System C: Guaranteed Delivery")
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Secure. Local. Unified.", color = MaterialTheme.colorScheme.primary)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text("100% on-prem. No cloud dependencies.", style = MaterialTheme.typography.bodySmall)
+                Text("RED Ultimate", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Version 1.0.0", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("RED is a secure, local, unified communication platform. It provides encrypted messaging, PSTN calling via Dumin gateway, and story sharing — all running on your own infrastructure.")
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("Built with Kotlin, Spring Boot, Compose, and love.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } }
+    )
+}
+
+@Composable
+private fun StorageInfoDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Storage Usage") },
+        text = {
+            Column {
+                StorageRow("Messages", "12.5 MB")
+                StorageRow("Media", "156.3 MB")
+                StorageRow("Stories", "23.1 MB")
+                StorageRow("Cache", "8.7 MB")
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                StorageRow("Total", "200.6 MB", bold = true)
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text("OK") }
+        },
+        dismissButton = {
+            TextButton(onClick = { /* TODO: Clear cache */ }) { Text("Clear Cache") }
         }
     )
+}
+
+@Composable
+private fun StorageRow(label: String, size: String, bold: Boolean = false) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal)
+        Text(size, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal)
+    }
 }

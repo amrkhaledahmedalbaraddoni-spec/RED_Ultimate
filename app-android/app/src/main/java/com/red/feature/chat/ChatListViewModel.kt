@@ -2,7 +2,6 @@ package com.red.feature.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.red.core.delivery.ClientIdentity
 import com.red.core.models.PublicUserDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,13 +15,14 @@ data class ConversationItem(
     val peerId: String,
     val lastTimestamp: Long,
     val messageCount: Long,
-    val isOnline: Boolean = false
+    val isOnline: Boolean = false,
+    val unreadCount: Long = 0,
+    val lastMessage: String = ""
 )
 
 @HiltViewModel
 class ChatListViewModel @Inject constructor(
-    private val chatApi: ChatApi,
-    private val identity: ClientIdentity
+    private val chatApi: ChatApi
 ) : ViewModel() {
 
     private val _conversations = MutableStateFlow<List<ConversationItem>>(emptyList())
@@ -37,6 +37,9 @@ class ChatListViewModel @Inject constructor(
     private val _onlineUsers = MutableStateFlow<Set<String>>(emptySet())
     val onlineUsers: StateFlow<Set<String>> = _onlineUsers
 
+    private val _unreadCounts = MutableStateFlow<Map<String, Long>>(emptyMap())
+    val unreadCounts: StateFlow<Map<String, Long>> = _unreadCounts
+
     fun load() {
         viewModelScope.launch {
             _loading.value = true
@@ -45,6 +48,14 @@ class ChatListViewModel @Inject constructor(
                 val onlineResponse = chatApi.getOnlineUsers()
                 if (onlineResponse.isSuccessful) {
                     _onlineUsers.value = onlineResponse.body()?.map { it.userId }?.toSet() ?: emptySet()
+                }
+            } catch (_: Exception) { }
+
+            try {
+                // Load unread counts
+                val unreadResponse = chatApi.unreadCount()
+                if (unreadResponse.isSuccessful) {
+                    _unreadCounts.value = unreadResponse.body() ?: emptyMap()
                 }
             } catch (_: Exception) { }
 
@@ -62,7 +73,8 @@ class ChatListViewModel @Inject constructor(
                             peerId = dto.peerId,
                             lastTimestamp = dto.lastTimestamp,
                             messageCount = dto.messageCount,
-                            isOnline = _onlineUsers.value.contains(dto.peerId)
+                            isOnline = _onlineUsers.value.contains(dto.peerId),
+                            unreadCount = _unreadCounts.value[dto.conversationId] ?: 0
                         )
                     }
                     _conversations.value = items
