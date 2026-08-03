@@ -1,51 +1,71 @@
 package com.red.feature.stories
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
+import java.text.SimpleDateFormat
+import java.util.*
 
-/** Placeholder Stories list. Tapping the FAB would open [CameraCaptureScreen]. */
 @Composable
-fun StoryListScreen() {
-  Scaffold(
-    topBar = { TopAppBar(title = { Text("Status") }) },
-    floatingActionButton = {
-      ExtendedFloatingActionButton(
-        onClick = { /* open CameraCaptureScreen */ },
-        icon = { Icon(Icons.Default.Add, contentDescription = null) },
-        text = { Text("Add Status") }
-      )
+fun StoryListScreen(navController: NavController? = null) {
+    val viewModel: StoryViewModel = hiltViewModel()
+    val stories by viewModel.stories.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) { viewModel.load() }
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { navController?.navigate("story_capture") }) {
+                Icon(Icons.Default.Add, contentDescription = "Add Story")
+            }
+        }
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            TopAppBar(title = { Text("Stories") }, colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ))
+
+            if (stories.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No stories yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(stories) { story ->
+                        StoryRow(story)
+                        HorizontalDivider()
+                    }
+                }
+            }
+        }
     }
-  ) { padding ->
-    Column(
-      modifier = Modifier.fillMaxSize().padding(padding),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.Center
+}
+
+@Composable
+private fun StoryRow(story: StoryDto) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-      Box(
-        modifier = Modifier.size(96.dp).background(Color(0xFF1F1F1F), CircleShape),
-        contentAlignment = Alignment.Center
-      ) {
-        Text("No stories yet", color = MaterialTheme.colorScheme.onSurface)
-      }
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Story by ${story.ownerId.take(8)}…", style = MaterialTheme.typography.titleMedium)
+            Text(formatExpiry(story.expiresAt), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
-  }
+}
+
+private fun formatExpiry(ts: Long): String {
+    val remaining = ts - System.currentTimeMillis()
+    return if (remaining > 0) "Expires in ${remaining / 3600000}h" else "Expired"
 }

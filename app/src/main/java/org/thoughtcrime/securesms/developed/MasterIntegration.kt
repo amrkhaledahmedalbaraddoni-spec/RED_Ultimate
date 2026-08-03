@@ -5,61 +5,86 @@ import android.util.Log
 import org.thoughtcrime.securesms.developed.delivery.GuaranteedDelivery
 import org.thoughtcrime.securesms.developed.pstn.DuminManager
 import org.thoughtcrime.securesms.developed.voip.UltraHDCall
+import org.thoughtcrime.securesms.dependencies.DevelopedServerConfig
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URL
+import kotlin.concurrent.thread
 
-/**
- * RED Master Integration Layer.
- *
- * A thin façade that wires the three RED sub-systems into the Signal-Android application lifecycle.
- * It delegates the real work to the dedicated engines and keeps a strict boundary between
- * System A (VoIP) and System B (PSTN) so no WebRTC context can leak into the GSM path.
- */
 object MasterIntegration {
 
   private const val TAG = "RED"
   private const val PREFS = "red_sovereign_prefs"
   private const val KEY_APPROVED = "user_approved"
+  private const val KEY_TOKEN = "auth_token"
 
-  @Volatile
-  private var voipEngine: UltraHDCall? = null
+  @Volatile private var voipEngine: UltraHDCall? = null
+  @Volatile private var pstnEngine: DuminManager? = null
+  @Volatile private var deliveryEngine: GuaranteedDelivery? = null
 
-  @Volatile
-  private var pstnEngine: DuminManager? = null
-
-  @Volatile
-  private var deliveryEngine: GuaranteedDelivery? = null
-
-  /**
-   * Bootstraps all engines. Idempotent and safe to call from [android.app.Application.onCreate].
-   */
   fun initialize(context: Context) {
-    if (voipEngine != null) {
-      return
-    }
+    if (voipEngine != null) return
     voipEngine = UltraHDCall(codec = "AV1", resolution = "4K")
-    pstnEngine = DuminManager(org.thoughtcrime.securesms.dependencies.DevelopedServerConfig.DUMIN_GATEWAY_URL)
+    pstnEngine = DuminManager(DevelopedServerConfig.DUMIN_GATEWAY_URL)
     deliveryEngine = GuaranteedDelivery(retryStrategy = "ExponentialBackoff")
     Log.i(TAG, "RED engines initialized (VoIP=AV1/4K, PSTN=Dumin, Delivery=ExponentialBackoff)")
   }
 
-  /**
-   * Real admin-approval gate backed by encrypted app preferences.
-   *
-   * Returns false until an administrator explicitly approves the device, which is the correct
-   * default-deny behavior for an approval-enforced deployment.
-   */
   fun checkAdminApproval(context: Context): Boolean {
     val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     return prefs.getBoolean(KEY_APPROVED, false)
   }
 
-  /**
-   * Called by the approval flow once the backend confirms the user is approved.
-   */
   fun markApproved(context: Context) {
     context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-      .edit()
-      .putBoolean(KEY_APPROVED, true)
-      .apply()
+      .edit().putBoolean(KEY_APPROVED, true).apply()
+  }
+
+  fun storeToken(context: Context, token: String) {
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+      .edit().putString(KEY_TOKEN, token).apply()
+  }
+
+  /**
+   * Server-backed approval verification. Makes a real API call to /api/auth/status
+   * and updates the local flag accordingly. Runs on a background thread.
+   */
+  fun verifyApprovalFromServer(context: Context) {
+    val token = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+      .getString(KEY_TOKEN, null) ?: return
+    thread(name = "red-approval-verify", isDaemon = true) {
+      try {
+        val url = URL("${DevelopedServerConfig.SIGNAL_URL}/api/auth/status")
+        val conn = (url.openConnection() as HttpURLConnection).apply {
+          requestMethod = "GET"
+          setRequestProperty("Authorization", "Bearer $token")
+          connectTimeout = 5000
+          readTimeout = 5000
+        }
+        val code = conn.responseCode
+        if (code == 200) {
+          val body = BufferedReader(InputStreamReader(conn.inputStream)).readText()
+          when {
+            body.contains("\"APPROVED\"") -> {
+              markApproved(context)
+              Log.i(TAG, "Server confirmed APPROVED")
+            }
+            body.contains("\"BANNED\"") || body.contains("\"REJECTED\"") -> {
+              context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit().putBoolean(KEY_APPROVED, false).apply()
+              Log.w(TAG, "Server reported BANNED/REJECTED")
+            }
+            else -> Log.i(TAG, "Server status: $body")
+          }
+        } else {
+          Log.w(TAG, "Approval check failed: HTTP $code")
+        }
+        conn.disconnect()
+      } catch (e: Exception) {
+        Log.w(TAG, "Approval check error: ${e.message}")
+      }
+    }
   }
 
   fun deliveryEngine(): GuaranteedDelivery? = deliveryEngine

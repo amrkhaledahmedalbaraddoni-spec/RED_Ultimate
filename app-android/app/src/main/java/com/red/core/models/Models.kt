@@ -1,16 +1,8 @@
 package com.red.core.models
 
-import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
-enum class UserStatus {
-    @Json(name = "PENDING") PENDING,
-    @Json(name = "APPROVED") APPROVED,
-    @Json(name = "REJECTED") REJECTED,
-    @Json(name = "BANNED") BANNED
-}
-
-enum class UserRole { USER, ADMIN }
+enum class UserStatus { PENDING, APPROVED, REJECTED, BANNED }
 
 @JsonClass(generateAdapter = true)
 data class User(
@@ -18,8 +10,8 @@ data class User(
     val email: String,
     val fullName: String,
     val status: UserStatus,
-    val role: UserRole,
-    val createdAt: Long
+    val role: String = "USER",
+    val createdAt: Long = 0
 )
 
 @JsonClass(generateAdapter = true)
@@ -30,5 +22,12 @@ data class AuthResponse(
 
 @JsonClass(generateAdapter = true)
 data class StatusResponse(
+    val status: UserStatus
+)
+
+@JsonClass(generateAdapter = true)
+data class PublicUserDto(
+    val id: String,
+    val fullName: String,
     val status: UserStatus
 )

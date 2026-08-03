@@ -2,6 +2,7 @@ package com.red.feature.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.red.core.auth.TokenStore
 import com.red.core.delivery.ClientIdentity
 import com.red.core.delivery.MessageDeliveryManager
 import com.red.core.models.UserStatus
@@ -25,11 +26,22 @@ sealed class AuthUiState {
 class AuthViewModel @Inject constructor(
     private val authApi: AuthApi,
     private val identity: ClientIdentity,
-    private val deliveryManager: MessageDeliveryManager
+    private val deliveryManager: MessageDeliveryManager,
+    private val tokenStore: TokenStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState
+
+    init {
+        val savedToken = tokenStore.getToken()
+        val savedUserId = tokenStore.getUserId()
+        if (!savedToken.isNullOrBlank() && !savedUserId.isNullOrBlank()) {
+            identity.token = savedToken
+            identity.userId = savedUserId
+            checkStatus()
+        }
+    }
 
     fun register(name: String, email: String, password: String) {
         viewModelScope.launch {
@@ -59,6 +71,7 @@ class AuthViewModel @Inject constructor(
                             response.body()?.let { body ->
                                 identity.userId = body.user.id
                                 identity.token = body.token
+                                tokenStore.saveToken(body.token, body.user.id)
                             }
                             runCatching { deliveryManager.start() }
                             _uiState.value = AuthUiState.Authenticated
@@ -83,7 +96,10 @@ class AuthViewModel @Inject constructor(
                 val response = authApi.getStatus()
                 if (response.isSuccessful) {
                     when (response.body()?.status) {
-                        UserStatus.APPROVED -> _uiState.value = AuthUiState.Authenticated
+                        UserStatus.APPROVED -> {
+                            runCatching { deliveryManager.start() }
+                            _uiState.value = AuthUiState.Authenticated
+                        }
                         UserStatus.PENDING -> _uiState.value = AuthUiState.Pending
                         UserStatus.REJECTED -> _uiState.value = AuthUiState.Rejected
                         UserStatus.BANNED -> _uiState.value = AuthUiState.Banned
@@ -94,5 +110,12 @@ class AuthViewModel @Inject constructor(
                 // Ignore status check errors
             }
         }
+    }
+
+    fun logout() {
+        tokenStore.clear()
+        identity.userId = ""
+        identity.token = ""
+        _uiState.value = AuthUiState.Idle
     }
 }

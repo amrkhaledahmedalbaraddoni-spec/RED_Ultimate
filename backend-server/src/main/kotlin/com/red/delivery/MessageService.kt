@@ -8,8 +8,7 @@ import java.util.concurrent.TimeUnit
  * System C: Guaranteed Delivery.
  *
  * Pipeline: Receive -> De-duplicate (Redis, 24h TTL) -> Sequence (Redis INCR per conversation) ->
- * Persist (MongoDB) -> Return sequence number. Returns -1 for duplicates so the caller can ACK
- * accordingly.
+ * Persist (MongoDB) -> Return [Result] with the canonical id and sequence number.
  */
 @Service
 class MessageService(
@@ -17,14 +16,15 @@ class MessageService(
   private val redis: StringRedisTemplate
 ) {
 
-  fun processIncoming(message: IncomingMessage, forceId: String = UuidV7.now()): Long {
+  data class Result(val duplicate: Boolean, val id: String, val sequenceNumber: Long)
+
+  fun processIncoming(message: IncomingMessage, forceId: String = UuidV7.now()): Result {
     val id = message.messageId?.takeIf { it.isNotBlank() } ?: forceId
 
     val dedupKey = "msg:dedup:$id"
-    // SETNX with TTL: atomic "first writer wins" de-duplication.
     val stored = redis.opsForValue().setIfAbsent(dedupKey, "1", 24, TimeUnit.HOURS) ?: false
     if (!stored) {
-      return -1L
+      return Result(duplicate = true, id = id, sequenceNumber = -1L)
     }
 
     val seq = redis.opsForValue().increment("conv:seq:${message.conversationId}") ?: 0L
@@ -40,7 +40,7 @@ class MessageService(
       sequenceNumber = seq
     )
     messageRepository.save(doc)
-    return seq
+    return Result(duplicate = false, id = id, sequenceNumber = seq)
   }
 
   fun messagesForConversation(conversationId: String, since: Long): List<StoredMessage> =

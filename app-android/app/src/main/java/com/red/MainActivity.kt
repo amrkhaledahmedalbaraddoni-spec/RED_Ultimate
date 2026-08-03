@@ -37,29 +37,25 @@ import com.red.feature.chat.ChatListScreen
 import com.red.feature.profile.SettingsScreen
 import com.red.feature.pstn.DialPadScreen
 import com.red.feature.stories.StoryListScreen
+import com.red.feature.stories.StoryViewModel
+import com.red.feature.stories.CameraCaptureScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    setContent {
-      REDTheme { RootGraph() }
-    }
+    setContent { REDTheme { RootGraph() } }
   }
 }
 
-/**
- * Decides between the authentication flow and the main dashboard based on the live auth state.
- */
 @Composable
 private fun RootGraph() {
   val authViewModel: AuthViewModel = hiltViewModel()
   val state by authViewModel.uiState.collectAsStateWithLifecycle()
-
   when (state) {
     AuthUiState.Authenticated -> MainScreen()
-    AuthUiState.Loading -> Unit // root stays blank briefly while persisted state loads
+    AuthUiState.Loading -> Unit
     else -> AuthFlow()
   }
 }
@@ -77,13 +73,7 @@ private fun MainScreen() {
         items.forEach { screen ->
           NavigationBarItem(
             selected = current?.hierarchy?.any { it.route == screen.route } == true,
-            onClick = {
-              navController.navigate(screen.route) {
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                launchSingleTop = true
-                restoreState = true
-              }
-            },
+            onClick = { navController.navigate(screen.route) { popUpTo(navController.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true } },
             icon = { Icon(screen.icon, contentDescription = null) },
             label = { Text(screen.label) }
           )
@@ -93,21 +83,24 @@ private fun MainScreen() {
   ) { padding ->
     NavHost(navController, startDestination = Screen.Chats.route, Modifier.padding(padding)) {
       composable(Screen.Chats.route) { ChatListScreen(navController) }
-      composable(Screen.Stories.route) { StoryListScreen() }
+      composable(Screen.Stories.route) { StoryListScreen(navController) }
       composable(Screen.Calls.route) { CallLogScreen() }
       composable(Screen.Phone.route) { DialPadScreen(onDial = { navController.navigate("pstn_call/$it") }) }
       composable(Screen.Settings.route) { SettingsScreen() }
-
       composable("chat_detail/{chatId}") { entry ->
         val chatId = entry.arguments?.getString("chatId") ?: ""
         com.red.feature.chat.ChatDetailScreen(conversationId = chatId)
       }
       composable("pstn_call/{number}") { entry ->
         val number = entry.arguments?.getString("number") ?: ""
-        com.red.feature.pstn.PstnCallScreen(
-          phoneNumber = number,
-          onCallEnded = { navController.popBackStack() }
-        )
+        com.red.feature.pstn.PstnCallScreen(phoneNumber = number, onCallEnded = { navController.popBackStack() })
+      }
+      composable("story_capture") {
+        val storyVm: StoryViewModel = hiltViewModel()
+        CameraCaptureScreen(onImageCaptured = { uri ->
+          storyVm.publish(uri)
+          navController.popBackStack()
+        })
       }
     }
   }
@@ -124,11 +117,7 @@ private sealed class Screen(val route: String, val label: String, val icon: Imag
 @Composable
 fun REDTheme(content: @Composable () -> Unit) {
   MaterialTheme(
-    colorScheme = darkColorScheme(
-      primary = Color(0xFF2196F3),
-      secondary = Color(0xFF03DAC6),
-      background = Color(0xFF121212)
-    ),
+    colorScheme = darkColorScheme(primary = Color(0xFF2196F3), secondary = Color(0xFF03DAC6), background = Color(0xFF121212)),
     content = content
   )
 }

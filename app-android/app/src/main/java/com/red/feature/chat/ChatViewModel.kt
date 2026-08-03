@@ -6,23 +6,24 @@ import com.red.core.delivery.MessageDao
 import com.red.core.delivery.MessageDeliveryManager
 import com.red.core.delivery.MessageEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-    private val deliveryManager: MessageDeliveryManager,
-    private val messageDao: MessageDao
+    private val messageDao: MessageDao,
+    private val deliveryManager: MessageDeliveryManager
 ) : ViewModel() {
 
-    fun getMessages(conversationId: String): Flow<List<MessageEntity>> {
-        return messageDao.getMessagesForConversation(conversationId)
-    }
+    fun getMessages(conversationId: String): StateFlow<List<MessageEntity>> =
+        messageDao.getMessagesForConversation(conversationId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun sendMessage(conversationId: String, text: String) {
         viewModelScope.launch {
-            // For 1:1 chats the conversation id is the peer id; payload is opaque ciphertext.
             deliveryManager.sendMessage(conversationId, conversationId, text)
         }
     }

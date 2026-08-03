@@ -1,6 +1,7 @@
 package com.red.core.delivery
 
 import com.red.core.database.RedDatabase
+import com.squareup.moshi.Moshi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -11,24 +12,22 @@ import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * System C client: guarantees delivery by (1) persisting every outbound message immediately with
- * SENDING status, (2) pushing it over the WebSocket, and (3) flipping status to SENT/DELIVERED/
- * FAILED as acks arrive. Messages survive process death and are retried on reconnect.
- */
 @Singleton
 class MessageDeliveryManager @Inject constructor(
   private val database: RedDatabase,
   private val client: DevelopedWebSocketClient,
-  private val identity: ClientIdentity
+  private val identity: ClientIdentity,
+  private val moshi: Moshi
 ) {
 
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
   private val sendLock = Mutex()
   private val connected = MutableStateFlow(false)
+  private val frameAdapter = moshi.adapter(ChatFrame::class.java)
+  private val ackAdapter = moshi.adapter(MessageAck::class.java)
 
   fun start() {
-    client.setListener { raw -> handleIncoming(raw) }
+    client.setListener { raw -> scope.launch { handleFrame(raw) } }
     client.connect()
   }
 
@@ -60,11 +59,27 @@ class MessageDeliveryManager @Inject constructor(
     }
   }
 
-  private fun handleIncoming(raw: String) {
-    // Ack parsing is handled by the client; here we only act on ack frames.
+  private suspend fun handleFrame(raw: String) {
+    // Try as ACK first
+    val ack = runCatching { ackAdapter.fromJson(raw) }.getOrNull()
+    if (ack != null && ack.status != null) {
+      onAckReceived(ack)
+      return
+    }
+    // Otherwise treat as incoming message
+    val frame = runCatching { frameAdapter.fromJson(raw) }.getOrNull() ?: return
+    val entity = MessageEntity(
+      id = frame.messageId,
+      conversationId = frame.conversationId,
+      senderId = frame.senderId,
+      receiverId = identity.userId,
+      payload = frame.payload,
+      timestamp = frame.timestamp,
+      status = MessageStatus.DELIVERED
+    )
+    database.messageDao().upsert(entity)
   }
 
-  /** Called by the transport when a server [MessageAck] is decoded. */
   fun onAckReceived(ack: MessageAck) {
     scope.launch {
       val status = when (ack.status) {
@@ -78,7 +93,6 @@ class MessageDeliveryManager @Inject constructor(
   }
 }
 
-/** Minimal identity holder; populated by the auth flow after login. */
 @Singleton
 class ClientIdentity @Inject constructor() {
   var userId: String = ""
