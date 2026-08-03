@@ -20,7 +20,10 @@ plugins {
   alias(libs.plugins.ktlint)
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlinx.serialization)
-  alias(libs.plugins.jetbrains.kotlin.kapt)
+  // AGP 9's built-in Kotlin support already registers the `kapt` extension when
+  // the Android plugin is applied, so applying org.jetbrains.kotlin.kapt here
+  // would fail with "Cannot add extension with name 'kapt'". The kapt {}
+  // configuration block and kapt(...) dependencies below keep working.
   alias(libs.plugins.hilt)
   alias(testLibs.plugins.compose.screenshot)
   alias(benchmarkLibs.plugins.baselineprofile)

@@ -1,5 +1,26 @@
 # RED Ultimate — Changes & Fixes Log
 
+## v1.1.1 — Build Stabilization (2026-08-03)
+
+Fixes that unblock `assemblePlayProdDebug` on a clean JDK 21 / Windows or Linux machine
+(previously applied only locally and never committed):
+
+- **Hilt 2.52 → 2.59.2** (`gradle/libs.versions.toml`): Hilt 2.52 fails on AGP 9.x with
+  `Android BaseExtension not found` (dagger issue #4944). 2.59.2 is the confirmed fix.
+- **Removed duplicate `org.jetbrains.kotlin.kapt` plugin** (`app/build.gradle.kts`): AGP 9's
+  built-in Kotlin support already registers the `kapt` extension, so applying the plugin
+  again failed with `Cannot add extension with name 'kapt'`. The `kapt {}` block and the
+  `kapt(...)` Hilt/Room dependencies are unchanged and still work.
+- **Added `backend-server/gradle.properties`**: `backend-server` is an included (composite)
+  build with its own Gradle properties; without this file it did not inherit the root
+  `org.gradle.dependency.verification=lenient` setting and the whole root build failed
+  during configuration with `Dependency verification failed for configuration 'classpath'`.
+- **`build-windows.bat` / `verify-all.bat`**: also auto-detect Android Studio secondary
+  installs (e.g. `C:\Program Files\Android\Android Studio2\jbr`) and validate `JAVA_HOME`.
+
+Verification: `audit_check.py` 90/90, `integration_test.py` 446/446, `api_contract_test.py`
+68/68, admin dashboard `npm ci && npm run build` successful.
+
 ## v1.1.0 — Comprehensive Enhancement (2026-08-03)
 
 ### Backend Server
