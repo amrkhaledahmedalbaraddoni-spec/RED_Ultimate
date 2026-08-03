@@ -20,8 +20,13 @@ plugins {
   alias(libs.plugins.ktlint)
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlinx.serialization)
-  alias(libs.plugins.jetbrains.kotlin.kapt)
+  // AGP 9 ships with built-in Kotlin support, so org.jetbrains.kotlin.kapt is
+  // NOT compatible (applying it fails with "Cannot add extension with name
+  // 'kapt'"). Hilt and Room are processed with KSP instead (KSP 2.3.x is
+  // compatible with AGP 9 built-in Kotlin, and Hilt/androidx.hilt/Room all
+  // support KSP).
   alias(libs.plugins.hilt)
+  alias(libs.plugins.ksp)
   alias(testLibs.plugins.compose.screenshot)
   alias(benchmarkLibs.plugins.baselineprofile)
   id("androidx.navigation.safeargs")
@@ -727,10 +732,6 @@ kotlin {
   }
 }
 
-kapt {
-  correctErrorTypes = true
-}
-
 dependencies {
   // RED's Compose/Hilt/Room feature set is compiled into this application module.
   // It is deliberately not a second Android application or a separate Gradle build.
@@ -751,9 +752,9 @@ dependencies {
   implementation(libs.work.runtime.ktx)
   implementation(libs.coil.compose)
 
-  kapt(libs.hilt.compiler)
-  kapt(libs.hilt.androidx.compiler)
-  kapt(libs.room.compiler)
+  ksp(libs.hilt.compiler)
+  ksp(libs.hilt.androidx.compiler)
+  ksp(libs.room.compiler)
 
   lintChecks(project(":lintchecks"))
   ktlintRuleset(libs.ktlint.twitter.compose)

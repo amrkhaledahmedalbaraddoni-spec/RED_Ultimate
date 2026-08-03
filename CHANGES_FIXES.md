@@ -1,5 +1,38 @@
 # RED Ultimate — Changes & Fixes Log
 
+## v1.1.1 — Build Stabilization (2026-08-03)
+
+Fixes that unblock `assemblePlayProdDebug` on a clean JDK 21 / Windows or Linux machine
+(previously applied only locally and never committed):
+
+- **Hilt 2.52 → 2.59.2** (`gradle/libs.versions.toml`): Hilt 2.52 fails on AGP 9.x with
+  `Android BaseExtension not found` (dagger issue #4944). 2.59.2 is the confirmed fix.
+- **Migrated annotation processing from kapt to KSP** (`app/build.gradle.kts`): AGP 9 ships
+  with built-in Kotlin, so the KGP `org.jetbrains.kotlin.kapt` plugin is incompatible
+  (`Cannot add extension with name 'kapt'`). Google's alternative `com.android.legacy-kapt`
+  does not work with the Hilt Gradle plugin (dagger issue #4756), and KSP 2.3.x is the
+  supported path for AGP 9 built-in Kotlin (ksp issue #2615). Hilt 2.59.2, androidx.hilt
+  1.2.0 and Room 2.6.1 all support KSP, so `kapt(...)` dependencies and the `kapt {}` block
+  were replaced with the KSP plugin (`com.google.devtools.ksp` 2.3.2) and `ksp(...)`.
+- **Moved the Hilt application entry point to Kotlin** (new `com.red.RedHiltApplication`,
+  manifest `android:name` updated): Hilt's KSP processor only processes Kotlin sources, so
+  `@HiltAndroidApp`, the `@Inject` fields and `Configuration.Provider` were removed from the
+  Java class `org.thoughtcrime.securesms.ApplicationContext`. `RedHiltApplication` extends
+  `ApplicationContext`, keeping all Signal initialization in the same class hierarchy/APK.
+- **Added `backend-server/gradle.properties`**: `backend-server` is an included (composite)
+  build with its own Gradle properties; without this file it did not inherit the root
+  `org.gradle.dependency.verification=lenient` setting and the whole root build failed
+  during configuration with `Dependency verification failed for configuration 'classpath'`.
+- **`build-windows.bat` / `verify-all.bat`**: also auto-detect Android Studio secondary
+  installs (e.g. `C:\Program Files\Android\Android Studio2\jbr`) and validate `JAVA_HOME`.
+- **QR code identity**: the QR screen now uses the authenticated RED user id/name
+  (`SettingsViewModel.userId` + server profile) instead of the hardcoded
+  `"current-user"` / `"Me"` placeholders.
+
+Verification: `audit_check.py` 90/90, `integration_test.py` 446/446, `api_contract_test.py`
+68/68, admin dashboard `npm ci && npm run build` successful; static import resolution over
+the whole `com.red` / Signal-developed surface passes with no missing internal references.
+
 ## v1.1.0 — Comprehensive Enhancement (2026-08-03)
 
 ### Backend Server

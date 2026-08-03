@@ -241,9 +241,11 @@ private fun MainScreen() {
 
         // QR Code
         composable("qr_code") {
+          val settingsViewModel: com.red.feature.profile.SettingsViewModel = hiltViewModel()
+          val profile by settingsViewModel.profile.collectAsStateWithLifecycle()
           QRCodeScreen(
-            userId = "current-user",
-            userName = "Me",
+            userId = settingsViewModel.userId.ifBlank { "current-user" },
+            userName = profile.fullName.ifBlank { "Me" },
             onBack = { navController.popBackStack() }
           )
         }

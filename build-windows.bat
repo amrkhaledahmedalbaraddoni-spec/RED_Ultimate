@@ -13,10 +13,17 @@ echo  ========================================
 echo.
 
 REM Prefer Android Studio's bundled JDK 21 when JAVA_HOME is not already configured.
+REM Both the default install ("Android Studio") and secondary installs such as
+REM "Android Studio2" ship a JDK at <install>\jbr.
 if not defined JAVA_HOME if exist "%ProgramFiles%\Android\Android Studio\jbr\bin\java.exe" set "JAVA_HOME=%ProgramFiles%\Android\Android Studio\jbr"
+if not defined JAVA_HOME if exist "%ProgramFiles%\Android\Android Studio2\jbr\bin\java.exe" set "JAVA_HOME=%ProgramFiles%\Android\Android Studio2\jbr"
 if not defined JAVA_HOME (
     echo ERROR: JAVA_HOME is not set and Android Studio's JDK was not found.
     echo Install JDK 21 and set JAVA_HOME before running this script.
+    exit /b 1
+)
+if not exist "%JAVA_HOME%\bin\java.exe" (
+    echo ERROR: JAVA_HOME does not point to a valid JDK: %JAVA_HOME%
     exit /b 1
 )
 

@@ -4,6 +4,7 @@ cd /d "%~dp0"
 
 echo [1/5] Checking Java, Node, Python and Docker...
 if not defined JAVA_HOME if exist "%ProgramFiles%\Android\Android Studio\jbr\bin\java.exe" set "JAVA_HOME=%ProgramFiles%\Android\Android Studio\jbr"
+if not defined JAVA_HOME if exist "%ProgramFiles%\Android\Android Studio2\jbr\bin\java.exe" set "JAVA_HOME=%ProgramFiles%\Android\Android Studio2\jbr"
 if not defined JAVA_HOME (
   echo ERROR: JDK 21 is required. Set JAVA_HOME.
   exit /b 1
