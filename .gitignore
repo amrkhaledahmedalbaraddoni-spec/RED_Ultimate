@@ -1,4 +1,4 @@
-﻿# Android / Gradle generated files
+# Android / Gradle generated files
 .gradle/
 build/
 **/build/
@@ -23,6 +23,9 @@ Thumbs.db
 .kotlin/
 **/.kotlin/
 
-# Kotlin / Gradle temporary files
-.kotlin/
-**/.kotlin/
+# Node
+node_modules/
+
+# Build contexts
+dist/
+out/

@@ -1,0 +1,49 @@
+server:
+  port: 8080
+  address: 0.0.0.0
+
+spring:
+  application:
+    name: red-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/red_sovereign}
+    username: ${SPRING_DATASOURCE_USERNAME:red}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/red_messages}
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+red:
+  jwt:
+    # OVERRIDE IN PRODUCTION via RED_JWT_SECRET env var (>= 32 bytes, random).
+    secret: ${RED_JWT_SECRET:change-me-red-sovereign-secret-key-please-rotate-32bytes-min}
+    ttl-minutes: 1440
+  dumin:
+    base-url: ${RED_DUMIN_BASE_URL:http://192.168.1.100:5060}
+    api-token: ${RED_DUMIN_API_TOKEN:}
+  storage:
+    endpoint: ${RED_STORAGE_ENDPOINT:http://minio:9000}
+    access-key: ${MINIO_ROOT_USER:redadmin}
+    secret-key: ${MINIO_ROOT_PASSWORD:redsecret123}
+    bucket: red-media
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    com.red: INFO

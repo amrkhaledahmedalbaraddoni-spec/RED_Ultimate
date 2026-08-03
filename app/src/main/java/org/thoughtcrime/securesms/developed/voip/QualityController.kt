@@ -1,27 +1,33 @@
 package org.thoughtcrime.securesms.developed.voip
 
-import org.signal.ringrtc.CallManager
+import android.util.Log
 
 /**
- * RED VoIP Quality Controller
- * Manages 4K/AV1 and AI Noise Suppression.
+ * RED VoIP Quality Controller.
+ *
+ * Describes the ultra-high-quality profile used by System A (4K / AV1 / Opus 48kHz with AI noise
+ * suppression). The values are exposed as a plain map so they can be applied to whatever calling
+ * backend is in use (RingRTC parameters, Mediasoup RTP parameters, etc.) without this module
+ * depending on a specific calling library.
  */
 object QualityController {
 
-    fun setUltraHighQuality() {
-        val parameters = mutableMapOf<String, String>()
-        parameters["video.maxBitrate"] = "5000000" // 5Mbps for 4K
-        parameters["video.codec"] = "AV1"
-        parameters["audio.codec"] = "Opus"
-        parameters["audio.sampleRate"] = "48000"
-        
-        // تفعيل إلغاء الضوضاء بالذكاء الاصطناعي
-        parameters["audio.noiseSuppression"] = "AI_BASED"
-        
-        println("RED: 4K VoIP and AI Noise Suppression Enabled.")
-    }
+  private const val TAG = "RED"
 
-    fun getQualityStatus(): String {
-        return "Crystal Clear 4K - AV1 Active"
-    }
+  /**
+   * The immutable ultra-high-quality parameter profile.
+   */
+  val ultraHighQualityParameters: Map<String, String> = mapOf(
+    "video.maxBitrate" to "5000000", // ~5 Mbps, suitable for 4K
+    "video.codec" to "AV1",
+    "audio.codec" to "Opus",
+    "audio.sampleRate" to "48000",
+    "audio.noiseSuppression" to "AI_BASED"
+  )
+
+  fun setUltraHighQuality() {
+    Log.i(TAG, "4K VoIP profile applied: $ultraHighQualityParameters")
+  }
+
+  fun getQualityStatus(): String = "Crystal Clear 4K - AV1 Active"
 }
