@@ -74,7 +74,8 @@ data class JwtProperties(
 
 @ConfigurationProperties(prefix = "red.dumin")
 data class DuminProperties(
-  var baseUrl: String = "http://192.168.1.100:5060",
+  var enabled: Boolean = false,
+  var baseUrl: String = "http://127.0.0.1:5060",
   var apiToken: String = ""
 )
 

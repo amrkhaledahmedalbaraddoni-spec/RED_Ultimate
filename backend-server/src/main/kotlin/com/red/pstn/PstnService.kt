@@ -25,6 +25,7 @@ class PstnService(props: DuminProperties) {
     val duration: Long = 0L
   )
 
+  private val enabled: Boolean = props.enabled
   private val baseHttpUrl: String = props.baseUrl.removeSuffix("/")
   private val apiToken: String = props.apiToken
   private val client: RestClient = RestClient.create()
@@ -32,8 +33,11 @@ class PstnService(props: DuminProperties) {
   // In-memory call tracking for active calls
   private val activeCalls = ConcurrentHashMap<String, CallResponse>()
 
-  fun dial(phoneNumber: String, duminIp: String = "192.168.1.100"): CallResponse {
+  fun dial(phoneNumber: String, duminIp: String = ""): CallResponse {
     require(phoneNumber.matches(Regex("^[0-9+]{4,20}$"))) { "Invalid phone number" }
+    if (!enabled) {
+      return CallResponse(callId = null, status = "UNAVAILABLE")
+    }
     val encoded = URLEncoder.encode(phoneNumber, StandardCharsets.UTF_8)
     val url = "$baseHttpUrl/api/call/dial?number=$encoded"
     return try {
@@ -52,6 +56,7 @@ class PstnService(props: DuminProperties) {
   }
 
   fun getCallStatus(callId: String): CallResponse? {
+    if (!enabled) return CallResponse(callId = callId, status = "UNAVAILABLE")
     // Check local tracking first
     val local = activeCalls[callId]
     if (local != null) {
@@ -80,6 +85,7 @@ class PstnService(props: DuminProperties) {
   }
 
   fun hangup(callId: String) {
+    if (!enabled) return
     try {
       client.post()
         .uri("$baseHttpUrl/api/call/hangup?call_id=$callId")
@@ -90,7 +96,9 @@ class PstnService(props: DuminProperties) {
     activeCalls.remove(callId)
   }
 
-  fun simStatus(): Map<String, String> = try {
+  fun simStatus(): Map<String, String> {
+    if (!enabled) return mapOf("status" to "DISABLED", "message" to "Dumin gateway is not configured")
+    return try {
     @Suppress("UNCHECKED_CAST")
     (client.get().uri("$baseHttpUrl/api/sim/status").retrieve().body(Map::class.java) as? Map<String, String>)
       ?: mapOf("status" to "UNKNOWN")

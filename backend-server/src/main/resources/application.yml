@@ -27,7 +27,8 @@ red:
     secret: ${RED_JWT_SECRET:change-me-red-sovereign-secret-key-please-rotate-32bytes-min}
     ttl-minutes: 1440
   dumin:
-    base-url: ${RED_DUMIN_BASE_URL:http://192.168.1.100:5060}
+    enabled: ${RED_DUMIN_ENABLED:false}
+    base-url: ${RED_DUMIN_BASE_URL:http://127.0.0.1:5060}
     api-token: ${RED_DUMIN_API_TOKEN:}
   storage:
     endpoint: ${RED_STORAGE_ENDPOINT:http://minio:9000}

@@ -18,7 +18,8 @@ services:
       - RED_STORAGE_ENDPOINT=http://minio:9000
       - MINIO_ROOT_USER=redadmin
       - MINIO_ROOT_PASSWORD=redsecret123
-      - RED_DUMIN_BASE_URL=http://192.168.1.100:5060
+      - RED_DUMIN_ENABLED=${RED_DUMIN_ENABLED:-false}
+      - RED_DUMIN_BASE_URL=${RED_DUMIN_BASE_URL:-http://127.0.0.1:5060}
       - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC
     depends_on:
       db-postgres: { condition: service_healthy }
@@ -30,6 +31,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    ports:
+      - "${RED_BACKEND_PORT:-8080}:8080"
     networks: [red-net]
 
   # 2. Media SFU: Mediasoup worker for 4K VoIP (System A)

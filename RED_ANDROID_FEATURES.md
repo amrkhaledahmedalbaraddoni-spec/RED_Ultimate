@@ -139,12 +139,19 @@ The RED feature surface is compiled inside the single root `:app` application. T
 
 ## 📋 كيفية البناء
 
-```bash
-# على Windows:
-build-windows.bat
+الخادم المحلي هو الافتراضي، وDumin/PSTN معطل حتى يتوفر Gateway محلي.
 
-# على Linux/Mac (من جذر المستودع):
-./gradlew :Signal-Android:assemblePlayProdDebug
+```bash
+# Android Emulator: 10.0.2.2 يشير إلى جهاز الكمبيوتر المضيف
+./gradlew -Pred.server.url=http://10.0.2.2:8080 -Pred.dumin.enabled=false :Signal-Android:assemblePlayProdDebug
+
+# جهاز فعلي: استبدل العنوان بعنوان LAN الخاص بالخادم
+./gradlew -Pred.server.url=http://192.168.1.50:8080 -Pred.dumin.enabled=false :Signal-Android:assemblePlayProdDebug
+```
+
+```bat
+REM على Windows
+build-windows.bat
 ```
 
 ## ⚠️ ملاحظات مهمة

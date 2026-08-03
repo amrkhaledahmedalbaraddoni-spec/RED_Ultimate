@@ -14,7 +14,7 @@ public final class DevelopedServerConfig {
     private DevelopedServerConfig() {
     }
 
-    public static final String SIGNAL_URL = BuildConfig.SIGNAL_URL;
+    public static final String SIGNAL_URL = BuildConfig.RED_SERVER_URL;
     public static final String SIGNAL_CDN_URL = BuildConfig.SIGNAL_CDN_URL;
     public static final String SIGNAL_CONTACT_DISCOVERY_URL = SIGNAL_URL + "/directory";
     public static final String SIGNAL_KEY_BACKUP_URL = SIGNAL_URL + "/backup";

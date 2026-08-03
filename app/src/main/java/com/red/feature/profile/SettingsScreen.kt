@@ -257,13 +257,13 @@ fun SettingsScreen(
                 icon = Icons.Default.Description,
                 title = "Terms of Service",
                 subtitle = "View terms",
-                onClick = { openExternalUrl(context, "${org.thoughtcrime.securesms.BuildConfig.SIGNAL_URL}/terms") }
+                onClick = { openExternalUrl(context, "${org.thoughtcrime.securesms.BuildConfig.RED_SERVER_URL}/terms") }
             )
             SettingsItem(
                 icon = Icons.Default.PrivacyTip,
                 title = "Privacy Policy",
                 subtitle = "View policy",
-                onClick = { openExternalUrl(context, "${org.thoughtcrime.securesms.BuildConfig.SIGNAL_URL}/privacy") }
+                onClick = { openExternalUrl(context, "${org.thoughtcrime.securesms.BuildConfig.RED_SERVER_URL}/privacy") }
             )
             SettingsItem(
                 icon = Icons.Default.Update,

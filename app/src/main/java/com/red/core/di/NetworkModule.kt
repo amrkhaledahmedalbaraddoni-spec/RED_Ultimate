@@ -42,7 +42,7 @@ object NetworkModule {
 
   // Use the same RED endpoint as the Signal client. Keeping one source of truth avoids
   // shipping a second hard-coded LAN endpoint in the merged application.
-  private val BASE_URL = BuildConfig.SIGNAL_URL.trimEnd('/') + "/"
+  private val BASE_URL = BuildConfig.RED_SERVER_URL.trimEnd('/') + "/"
   private val SERVER_HOST = requireNotNull(URI(BASE_URL).host) {
     "RED server URL must contain a valid host: $BASE_URL"
   }

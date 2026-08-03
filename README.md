@@ -40,12 +40,16 @@ Build the merged APK from the repository root:
 ```bash
 ./gradlew :Signal-Android:assemblePlayProdDebug
 
-# Optional local/QA endpoint overrides (do not hard-code these in source)
-./gradlew -Pred.server.url=https://your-red-host -Pred.dumin.ip=10.0.2.2 :Signal-Android:assemblePlayProdDebug
+# Local server (Android Emulator -> host machine)
+./gradlew -Pred.server.url=http://10.0.2.2:8080 -Pred.dumin.enabled=false :Signal-Android:assemblePlayProdDebug
+
+# Physical device example (replace with the server computer's LAN IP)
+./gradlew -Pred.server.url=http://192.168.1.50:8080 -Pred.dumin.enabled=false :Signal-Android:assemblePlayProdDebug
 ```
 
 The RED surface is available from the Signal app settings under **RED Ultimate**; it does not
-create a second launcher icon or a second application ID.
+create a second launcher icon or a second application ID. For local-server setup, see
+[`RED_LOCAL_SERVER.md`](RED_LOCAL_SERVER.md).
 
 ## Contributing Code
 

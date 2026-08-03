@@ -397,7 +397,7 @@ check((app_dir / "core" / "security" / "SessionManager.kt").exists(), "Session m
 
 # Check network security config
 network_module = ROOT / "app" / "src" / "main" / "java" / "com" / "red" / "core" / "di" / "NetworkModule.kt"
-check(network_module.exists() and "BuildConfig.SIGNAL_URL" in network_module.read_text(), "Merged RED network uses the canonical Signal endpoint")
+check(network_module.exists() and "BuildConfig.RED_SERVER_URL" in network_module.read_text(), "Merged RED network uses the canonical local RED endpoint")
 
 # Check no hardcoded secrets
 for kt_file in app_dir.rglob("*.kt"):

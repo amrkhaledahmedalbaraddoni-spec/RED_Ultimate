@@ -53,7 +53,8 @@ MINIO_ROOT_PASSWORD=redsecret123
 RED_STORAGE_ENDPOINT=http://minio:9000
 
 # ── PSTN / Dumin ───────────────────────────────────────────────────────────
-RED_DUMIN_BASE_URL=http://192.168.1.100:5060
+RED_DUMIN_ENABLED=false
+RED_DUMIN_BASE_URL=http://127.0.0.1:5060
 RED_DUMIN_API_TOKEN=
 EOF
 

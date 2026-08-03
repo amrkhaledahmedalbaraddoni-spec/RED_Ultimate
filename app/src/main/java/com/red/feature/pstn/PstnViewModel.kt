@@ -1,6 +1,7 @@
 package com.red.feature.pstn
 
 import androidx.lifecycle.ViewModel
+import org.thoughtcrime.securesms.BuildConfig
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -22,6 +23,10 @@ class PstnViewModel @Inject constructor(
 
     fun makeCall(number: String) {
         viewModelScope.launch {
+            if (!BuildConfig.RED_DUMIN_ENABLED) {
+                _callState.value = PstnCallState.Ended("PSTN gateway is not configured on this server")
+                return@launch
+            }
             _callState.value = PstnCallState.Dialing(number)
             try {
                 // Step 1: Request Asterisk/Dumin to start GSM call

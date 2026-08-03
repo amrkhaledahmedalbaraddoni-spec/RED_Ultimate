@@ -12,7 +12,7 @@ import org.springframework.web.server.ResponseStatusException
 @RequestMapping("/api/pstn")
 class PstnController(private val pstn: PstnService) {
 
-  data class DialRequest(val number: String, val duminIp: String = "192.168.1.100")
+  data class DialRequest(val number: String, val duminIp: String = "")
   data class HangupRequest(val callId: String)
 
   @PostMapping("/dial")

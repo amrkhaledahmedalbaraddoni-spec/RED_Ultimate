@@ -64,22 +64,28 @@ val quickstartCredentialsDir: String? = localProperties?.getProperty("quickstart
 val benchmarkBackupFile: String? = localProperties?.getProperty("benchmark.backup.file")
 
 // RED endpoints are configurable without editing source code. This keeps the production
-// defaults safe while allowing a local backend/Dumin gateway to be selected with:
-//   ./gradlew -Pred.server.url=https://10.0.2.2:8443 -Pred.dumin.ip=10.0.2.2 assemble...
-val redServerUrlOverride = providers.gradleProperty("red.server.url").orNull
+// defaults safe while allowing a local backend/Dumin gateway to be selected with either
+// Gradle properties (-Pred.server.url=...) or root local.properties entries.
+fun redProperty(name: String): String? =
+  providers.gradleProperty(name).orNull ?: localProperties?.getProperty(name)
+
+val redServerUrlOverride = redProperty("red.server.url")
   ?.trim()
   ?.takeIf { it.isNotEmpty() }
-val redServerUrl = redServerUrlOverride ?: "https://chat.red.local"
-val redStagingServerUrl = redServerUrlOverride ?: "https://chat.staging.red.local"
-val redDuminIp = providers.gradleProperty("red.dumin.ip").orNull
+val redServerUrl = redServerUrlOverride ?: "http://10.0.2.2:8080"
+val redStagingServerUrl = redServerUrlOverride ?: "http://10.0.2.2:8080"
+val redDuminEnabled = redProperty("red.dumin.enabled")
+  ?.toBooleanStrictOrNull()
+  ?: false
+val redDuminIp = redProperty("red.dumin.ip")
   ?.trim()
   ?.takeIf { it.matches(Regex("^[A-Za-z0-9.:-]+$")) }
-  ?: "192.168.1.100"
-val redDuminGatewayUrl = providers.gradleProperty("red.dumin.gateway.url").orNull
+  ?: "127.0.0.1"
+val redDuminGatewayUrl = redProperty("red.dumin.gateway.url")
   ?.trim()
   ?.takeIf { it.isNotEmpty() }
   ?: "http://$redDuminIp:5060"
-val redCertificatePins = providers.gradleProperty("red.certificate.pins").orNull
+val redCertificatePins = redProperty("red.certificate.pins")
   ?.split(",")
   ?.map { it.trim() }
   ?.filter { it.startsWith("sha256/") }
@@ -289,11 +295,14 @@ android {
     project.ext.set("archivesBaseName", "Signal")
 
     manifestPlaceholders["mapsKey"] = "AIzaSyCSx9xea86GwDKGznCAULE9Y5a8b-TfN9U"
+    manifestPlaceholders["redUsesCleartextTraffic"] = redServerUrl.startsWith("http://")
 
     buildConfigField("long", "BUILD_TIMESTAMP", getLastCommitTimestamp() + "L")
     buildConfigField("String", "GIT_HASH", "\"${getGitHash()}\"")
     buildConfigField("String", "SIGNAL_URL", buildConfigString(redServerUrl))
     buildConfigField("String", "STORAGE_URL", "\"https://storage.red.local\"")
+    buildConfigField("String", "RED_SERVER_URL", buildConfigString(redServerUrl))
+    buildConfigField("boolean", "RED_DUMIN_ENABLED", redDuminEnabled.toString())
     buildConfigField("String", "RED_DUMIN_IP", buildConfigString(redDuminIp))
     buildConfigField("String", "RED_DUMIN_GATEWAY_URL", buildConfigString(redDuminGatewayUrl))
     buildConfigField("String[]", "RED_CERTIFICATE_PINS", buildConfigStringArray(redCertificatePins))
@@ -521,6 +530,7 @@ android {
       applicationIdSuffix = ".staging"
 
       buildConfigField("String", "SIGNAL_URL", buildConfigString(redStagingServerUrl))
+      buildConfigField("String", "RED_SERVER_URL", buildConfigString(redStagingServerUrl))
       buildConfigField("String", "STORAGE_URL", "\"https://storage-staging.red.local\"")
       buildConfigField("String", "SIGNAL_CDN_URL", "\"https://cdn-staging.red.local\"")
       buildConfigField("String", "SIGNAL_CDN2_URL", "\"https://cdn2-staging.red.local\"")

@@ -54,7 +54,7 @@ class DevelopedWebSocketClientImpl @Inject constructor(
     .retryOnConnectionFailure(true)
     .build()
 
-  var wsUrl: String = BuildConfig.SIGNAL_URL
+  var wsUrl: String = BuildConfig.RED_SERVER_URL
     .trimEnd('/')
     .replaceFirst("https://", "wss://")
     .replaceFirst("http://", "ws://")

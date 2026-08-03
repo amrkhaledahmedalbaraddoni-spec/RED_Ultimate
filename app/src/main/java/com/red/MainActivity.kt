@@ -50,6 +50,7 @@ import com.red.feature.stories.StoryViewModel
 import com.red.feature.stories.CameraCaptureScreen
 import com.red.feature.stories.StoryViewerScreen
 import dagger.hilt.android.AndroidEntryPoint
+import org.thoughtcrime.securesms.BuildConfig
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -98,9 +99,16 @@ private fun MainScreen() {
   val navController = rememberNavController()
   val connectionViewModel: ConnectionViewModel = hiltViewModel()
   val isConnected by connectionViewModel.isConnected.collectAsStateWithLifecycle()
-  val items = listOf(
-    Screen.Chats, Screen.Stories, Screen.Calls, Screen.Phone, Screen.Contacts, Screen.Settings
-  )
+  val items = buildList {
+    add(Screen.Chats)
+    add(Screen.Stories)
+    if (BuildConfig.RED_DUMIN_ENABLED) {
+      add(Screen.Calls)
+      add(Screen.Phone)
+    }
+    add(Screen.Contacts)
+    add(Screen.Settings)
+  }
 
   Scaffold(
     bottomBar = {

@@ -83,7 +83,8 @@
         android:largeHeap="true"
         android:resizeableActivity="true"
         android:supportsRtl="true"
-        android:theme="@style/TextSecure.LightTheme">
+        android:theme="@style/TextSecure.LightTheme"
+        android:usesCleartextTraffic="${redUsesCleartextTraffic}">
 
         <!-- Merged RED feature surface. It is an internal activity in the same APK; it is not a
              second launcher application. The Signal launcher remains the only launcher entry. -->

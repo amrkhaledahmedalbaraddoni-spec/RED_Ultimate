@@ -239,7 +239,7 @@ checks.append(("build-windows.bat exists",
 
 # ── 5. Security ────────────────────────────────────────────────────────────
 checks.append(("DevelopedServerConfig uses generated secure endpoint configuration",
-    "BuildConfig.SIGNAL_URL" in read("app","src","main","java","org","thoughtcrime","securesms","dependencies","DevelopedServerConfig.java")))
+    "BuildConfig.RED_SERVER_URL" in read("app","src","main","java","org","thoughtcrime","securesms","dependencies","DevelopedServerConfig.java")))
 
 checks.append(("No hardcoded http:// default URL",
     'LOCAL_IP = "http' not in read("app","src","main","java","org","thoughtcrime","securesms","dependencies","DevelopedServerConfig.java")))
