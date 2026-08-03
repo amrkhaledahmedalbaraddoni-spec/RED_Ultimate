@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.red.core.crypto.EncryptionIndicator
 import com.red.core.delivery.MessageEntity
 import com.red.core.delivery.MessageStatus
 import java.text.SimpleDateFormat
@@ -75,12 +76,19 @@ fun ChatDetailScreen(
                 title = {
                     Column {
                         Text(peerName, fontWeight = FontWeight.Bold)
-                        if (isTyping) {
-                            Text(
-                                "typing…",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontStyle = FontStyle.Italic,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (isTyping) {
+                                Text(
+                                    "typing…",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontStyle = FontStyle.Italic,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            EncryptionIndicator(
+                                isEncrypted = true,
+                                isLocalEncryption = true
                             )
                         }
                     }

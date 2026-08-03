@@ -5,25 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.Contacts
-import androidx.compose.material.icons.filled.Dialpad
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Icon
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.collectAsState
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -35,10 +19,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.red.app.AuthFlow
+import com.red.core.delivery.ConnectionStatusBanner
+import com.red.core.security.BiometricHelper
+import com.red.feature.auth.AppLockScreen
 import com.red.feature.auth.AuthUiState
 import com.red.feature.auth.AuthViewModel
 import com.red.feature.calls.CallLogScreen
+import com.red.feature.calls.VideoCallScreen
 import com.red.feature.chat.ChatListScreen
+import com.red.feature.chat.CreateGroupScreen
 import com.red.feature.chat.NewChatScreen
 import com.red.feature.contacts.ContactsScreen
 import com.red.feature.profile.SettingsScreen
@@ -66,9 +55,23 @@ class MainActivity : ComponentActivity() {
 private fun RootGraph() {
   val authViewModel: AuthViewModel = hiltViewModel()
   val state by authViewModel.uiState.collectAsStateWithLifecycle()
-  when (state) {
-    AuthUiState.Authenticated -> MainScreen()
-    AuthUiState.Loading -> Unit
+
+  // Check if app lock is enabled
+  val context = androidx.compose.ui.platform.LocalContext.current
+  val isAppLockEnabled = BiometricHelper.isAppLockEnabled(context)
+  var isAppUnlocked by remember { mutableStateOf(!isAppLockEnabled) }
+
+  when {
+    !isAppUnlocked && isAppLockEnabled -> {
+      AppLockScreen(
+        onUnlock = { isAppUnlocked = true },
+        onUnlockWithBiometric = { isAppUnlocked = true }
+      )
+    }
+    state == AuthUiState.Authenticated -> MainScreen()
+    state == AuthUiState.Loading -> {
+      // Show loading
+    }
     else -> AuthFlow()
   }
 }
@@ -80,6 +83,9 @@ private fun MainScreen() {
     Screen.Chats, Screen.Stories, Screen.Calls, Screen.Phone, Screen.Contacts, Screen.Settings
   )
 
+  // Connection status
+  var isConnected by remember { mutableStateOf(true) }
+
   Scaffold(
     bottomBar = {
       NavigationBar {
@@ -89,105 +95,123 @@ private fun MainScreen() {
           NavigationBarItem(
             selected = current?.hierarchy?.any { it.route == screen.route } == true,
             onClick = { navController.navigate(screen.route) { popUpTo(navController.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true } },
-            icon = {
-              if (screen == Screen.Chats) {
-                BadgedBox(badge = { /* TODO: Unread count badge */ }) {
-                  Icon(screen.icon, contentDescription = null)
-                }
-              } else {
-                Icon(screen.icon, contentDescription = null)
-              }
-            },
+            icon = { Icon(screen.icon, contentDescription = null) },
             label = { Text(screen.label) }
           )
         }
       }
     }
   ) { padding ->
-    NavHost(navController, startDestination = Screen.Chats.route, Modifier.padding(padding)) {
-      composable(Screen.Chats.route) { ChatListScreen(navController) }
-      composable(Screen.Stories.route) { StoryListScreen(navController) }
-      composable(Screen.Calls.route) { CallLogScreen(onCallClick = { number -> navController.navigate("pstn_call/$number") }) }
-      composable(Screen.Phone.route) { DialPadScreen(onDial = { navController.navigate("pstn_call/$it") }) }
-      composable(Screen.Contacts.route) {
-        ContactsScreen(
-          onChatWith = { userId, name -> navController.navigate("chat_detail/$userId") },
-          onCallUser = { number -> navController.navigate("pstn_call/$number") }
-        )
-      }
-      composable(Screen.Settings.route) { SettingsScreen() }
+    Column(modifier = Modifier.padding(padding)) {
+      // Connection status banner
+      ConnectionStatusBanner(
+        isConnected = isConnected,
+        isReconnecting = false,
+        onRetry = { /* Trigger reconnect */ }
+      )
 
-      // Chat detail
-      composable("chat_detail/{chatId}") { entry ->
-        val chatId = entry.arguments?.getString("chatId") ?: ""
-        com.red.feature.chat.ChatDetailScreen(conversationId = chatId)
-      }
+      NavHost(navController, startDestination = Screen.Chats.route) {
+        composable(Screen.Chats.route) { ChatListScreen(navController) }
+        composable(Screen.Stories.route) { StoryListScreen(navController) }
+        composable(Screen.Calls.route) { CallLogScreen(onCallClick = { number -> navController.navigate("pstn_call/$number") }) }
+        composable(Screen.Phone.route) { DialPadScreen(onDial = { navController.navigate("pstn_call/$it") }) }
+        composable(Screen.Contacts.route) {
+          ContactsScreen(
+            onChatWith = { userId, name -> navController.navigate("chat_detail/$userId") },
+            onCallUser = { number -> navController.navigate("pstn_call/$number") }
+          )
+        }
+        composable(Screen.Settings.route) { SettingsScreen() }
 
-      // PSTN call
-      composable("pstn_call/{number}") { entry ->
-        val number = entry.arguments?.getString("number") ?: ""
-        com.red.feature.pstn.PstnCallScreen(phoneNumber = number, onCallEnded = { navController.popBackStack() })
-      }
+        // Chat detail
+        composable("chat_detail/{chatId}") { entry ->
+          val chatId = entry.arguments?.getString("chatId") ?: ""
+          com.red.feature.chat.ChatDetailScreen(conversationId = chatId)
+        }
 
-      // Story capture
-      composable("story_capture") {
-        val storyVm: StoryViewModel = hiltViewModel()
-        CameraCaptureScreen(onImageCaptured = { uri ->
-          storyVm.publish(uri)
-          navController.popBackStack()
-        })
-      }
+        // PSTN call
+        composable("pstn_call/{number}") { entry ->
+          val number = entry.arguments?.getString("number") ?: ""
+          com.red.feature.pstn.PstnCallScreen(phoneNumber = number, onCallEnded = { navController.popBackStack() })
+        }
 
-      // Story viewer
-      composable("story_viewer/{urls}") { entry ->
-        val urls = entry.arguments?.getString("urls")?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
-        StoryViewerScreen(stories = urls, onAllStoriesViewed = { navController.popBackStack() })
-      }
+        // Video call
+        composable("video_call/{peerName}") { entry ->
+          val peerName = entry.arguments?.getString("peerName") ?: "User"
+          VideoCallScreen(
+            peerName = peerName,
+            onEndCall = { navController.popBackStack() }
+          )
+        }
 
-      // New chat
-      composable("new_chat") {
-        NewChatScreen(
-          onBack = { navController.popBackStack() },
-          onUserSelected = { userId, name -> navController.navigate("chat_detail/$userId") }
-        )
-      }
+        // Story capture
+        composable("story_capture") {
+          val storyVm: StoryViewModel = hiltViewModel()
+          CameraCaptureScreen(onImageCaptured = { uri ->
+            storyVm.publish(uri)
+            navController.popBackStack()
+          })
+        }
 
-      // Profile
-      composable("profile/{userId}") { entry ->
-        val userId = entry.arguments?.getString("userId") ?: ""
-        ProfileScreen(
-          userId = userId,
-          onBack = { navController.popBackStack() },
-          onChat = { id -> navController.navigate("chat_detail/$id") }
-        )
-      }
+        // Story viewer
+        composable("story_viewer/{urls}") { entry ->
+          val urls = entry.arguments?.getString("urls")?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
+          StoryViewerScreen(stories = urls, onAllStoriesViewed = { navController.popBackStack() })
+        }
 
-      // Block list
-      composable("block_list") {
-        BlockListScreen(onBack = { navController.popBackStack() })
-      }
+        // New chat
+        composable("new_chat") {
+          NewChatScreen(
+            onBack = { navController.popBackStack() },
+            onUserSelected = { userId, name -> navController.navigate("chat_detail/$userId") }
+          )
+        }
 
-      // Notifications
-      composable("notifications") {
-        NotificationListScreen(onBack = { navController.popBackStack() })
-      }
+        // Create group
+        composable("create_group") {
+          CreateGroupScreen(
+            onBack = { navController.popBackStack() },
+            onCreateGroup = { name, members -> navController.popBackStack() }
+          )
+        }
 
-      // Media gallery
-      composable("media_gallery/{conversationId}") { entry ->
-        val conversationId = entry.arguments?.getString("conversationId") ?: ""
-        MediaGalleryScreen(
-          conversationId = conversationId,
-          onBack = { navController.popBackStack() }
-        )
-      }
+        // Profile
+        composable("profile/{userId}") { entry ->
+          val userId = entry.arguments?.getString("userId") ?: ""
+          ProfileScreen(
+            userId = userId,
+            onBack = { navController.popBackStack() },
+            onChat = { id -> navController.navigate("chat_detail/$id") }
+          )
+        }
 
-      // QR Code
-      composable("qr_code") {
-        QRCodeScreen(
-          userId = "current-user",
-          userName = "Me",
-          onBack = { navController.popBackStack() }
-        )
+        // Block list
+        composable("block_list") {
+          BlockListScreen(onBack = { navController.popBackStack() })
+        }
+
+        // Notifications
+        composable("notifications") {
+          NotificationListScreen(onBack = { navController.popBackStack() })
+        }
+
+        // Media gallery
+        composable("media_gallery/{conversationId}") { entry ->
+          val conversationId = entry.arguments?.getString("conversationId") ?: ""
+          MediaGalleryScreen(
+            conversationId = conversationId,
+            onBack = { navController.popBackStack() }
+          )
+        }
+
+        // QR Code
+        composable("qr_code") {
+          QRCodeScreen(
+            userId = "current-user",
+            userName = "Me",
+            onBack = { navController.popBackStack() }
+          )
+        }
       }
     }
   }
