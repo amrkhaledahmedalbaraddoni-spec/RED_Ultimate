@@ -1,5 +1,6 @@
 package com.red.feature.auth
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.red.core.auth.TokenStore
@@ -7,6 +8,7 @@ import com.red.core.delivery.ClientIdentity
 import com.red.core.delivery.MessageDeliveryManager
 import com.red.core.models.UserStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -24,6 +26,7 @@ sealed class AuthUiState {
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val authApi: AuthApi,
     private val identity: ClientIdentity,
     private val deliveryManager: MessageDeliveryManager,
@@ -72,7 +75,10 @@ class AuthViewModel @Inject constructor(
                                 identity.userId = body.user.id
                                 identity.token = body.token
                                 tokenStore.saveToken(body.token, body.user.id)
+                                org.thoughtcrime.securesms.developed.MasterIntegration.storeToken(context, body.token)
                             }
+                            org.thoughtcrime.securesms.developed.MasterIntegration.markApproved(context)
+                            org.thoughtcrime.securesms.developed.REDCore.initializeEverything(context)
                             runCatching { deliveryManager.start() }
                             _uiState.value = AuthUiState.Authenticated
                         }
@@ -97,6 +103,11 @@ class AuthViewModel @Inject constructor(
                 if (response.isSuccessful) {
                     when (response.body()?.status) {
                         UserStatus.APPROVED -> {
+                            org.thoughtcrime.securesms.developed.MasterIntegration.markApproved(context)
+                            if (identity.token.isNotBlank()) {
+                                org.thoughtcrime.securesms.developed.MasterIntegration.storeToken(context, identity.token)
+                            }
+                            org.thoughtcrime.securesms.developed.REDCore.initializeEverything(context)
                             runCatching { deliveryManager.start() }
                             _uiState.value = AuthUiState.Authenticated
                         }
@@ -113,7 +124,9 @@ class AuthViewModel @Inject constructor(
     }
 
     fun logout() {
+        deliveryManager.stop()
         tokenStore.clear()
+        org.thoughtcrime.securesms.developed.MasterIntegration.clearApproval(context)
         identity.userId = ""
         identity.token = ""
         _uiState.value = AuthUiState.Idle

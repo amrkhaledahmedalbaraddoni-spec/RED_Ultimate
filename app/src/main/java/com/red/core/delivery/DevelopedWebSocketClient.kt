@@ -11,6 +11,9 @@ interface DevelopedWebSocketClient {
   /** Register a listener for inbound messages and acks. */
   fun setListener(listener: Listener)
 
+  /** Observe transport connectivity without exposing the concrete WebSocket implementation. */
+  fun setConnectionListener(listener: (Boolean) -> Unit) {}
+
   fun close()
 
   fun interface Listener {

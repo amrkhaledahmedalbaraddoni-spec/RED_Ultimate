@@ -5,6 +5,7 @@ import com.red.core.auth.TokenStore
 import com.red.core.delivery.ClientIdentity
 import com.red.core.delivery.DevelopedWebSocketClient
 import com.red.core.delivery.DevelopedWebSocketClientImpl
+import com.red.core.security.CertificatePinner
 import com.red.feature.auth.AuthApi
 import com.red.feature.chat.ChatApi
 import com.red.feature.chat.ContactApi
@@ -31,6 +32,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import java.net.URI
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
@@ -41,6 +43,9 @@ object NetworkModule {
   // Use the same RED endpoint as the Signal client. Keeping one source of truth avoids
   // shipping a second hard-coded LAN endpoint in the merged application.
   private val BASE_URL = BuildConfig.SIGNAL_URL.trimEnd('/') + "/"
+  private val SERVER_HOST = requireNotNull(URI(BASE_URL).host) {
+    "RED server URL must contain a valid host: $BASE_URL"
+  }
 
   @Provides
   @Singleton
@@ -65,9 +70,14 @@ object NetworkModule {
 
   @Provides
   @Singleton
-  fun provideOkHttp(authInterceptor: Interceptor, loggingInterceptor: HttpLoggingInterceptor): OkHttpClient = OkHttpClient.Builder()
+  fun provideOkHttp(
+    authInterceptor: Interceptor,
+    loggingInterceptor: HttpLoggingInterceptor,
+    certificatePinner: CertificatePinner
+  ): OkHttpClient = OkHttpClient.Builder()
     .addInterceptor(authInterceptor)
     .addInterceptor(loggingInterceptor)
+    .certificatePinner(certificatePinner.buildCertificatePinner(SERVER_HOST))
     .connectTimeout(30, TimeUnit.SECONDS)
     .readTimeout(30, TimeUnit.SECONDS)
     .writeTimeout(30, TimeUnit.SECONDS)

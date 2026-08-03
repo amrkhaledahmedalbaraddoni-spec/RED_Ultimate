@@ -63,6 +63,34 @@ val localProperties: Properties? = if (localPropertiesFile.exists()) {
 val quickstartCredentialsDir: String? = localProperties?.getProperty("quickstart.credentials.dir")
 val benchmarkBackupFile: String? = localProperties?.getProperty("benchmark.backup.file")
 
+// RED endpoints are configurable without editing source code. This keeps the production
+// defaults safe while allowing a local backend/Dumin gateway to be selected with:
+//   ./gradlew -Pred.server.url=https://10.0.2.2:8443 -Pred.dumin.ip=10.0.2.2 assemble...
+val redServerUrlOverride = providers.gradleProperty("red.server.url").orNull
+  ?.trim()
+  ?.takeIf { it.isNotEmpty() }
+val redServerUrl = redServerUrlOverride ?: "https://chat.red.local"
+val redStagingServerUrl = redServerUrlOverride ?: "https://chat.staging.red.local"
+val redDuminIp = providers.gradleProperty("red.dumin.ip").orNull
+  ?.trim()
+  ?.takeIf { it.matches(Regex("^[A-Za-z0-9.:-]+$")) }
+  ?: "192.168.1.100"
+val redDuminGatewayUrl = providers.gradleProperty("red.dumin.gateway.url").orNull
+  ?.trim()
+  ?.takeIf { it.isNotEmpty() }
+  ?: "http://$redDuminIp:5060"
+val redCertificatePins = providers.gradleProperty("red.certificate.pins").orNull
+  ?.split(",")
+  ?.map { it.trim() }
+  ?.filter { it.startsWith("sha256/") }
+  ?: emptyList()
+
+fun buildConfigString(value: String): String =
+  "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+
+fun buildConfigStringArray(values: List<String>): String =
+  "new String[]{${values.joinToString(",") { buildConfigString(it) }}}"
+
 val isInstrumentationTestRun = gradle.startParameter.taskNames.any { taskName ->
   val lower = taskName.lowercase()
   lower.contains("androidtest") || lower.contains("connectedcheck")
@@ -264,8 +292,11 @@ android {
 
     buildConfigField("long", "BUILD_TIMESTAMP", getLastCommitTimestamp() + "L")
     buildConfigField("String", "GIT_HASH", "\"${getGitHash()}\"")
-    buildConfigField("String", "SIGNAL_URL", "\"https://chat.red.local\"")
+    buildConfigField("String", "SIGNAL_URL", buildConfigString(redServerUrl))
     buildConfigField("String", "STORAGE_URL", "\"https://storage.red.local\"")
+    buildConfigField("String", "RED_DUMIN_IP", buildConfigString(redDuminIp))
+    buildConfigField("String", "RED_DUMIN_GATEWAY_URL", buildConfigString(redDuminGatewayUrl))
+    buildConfigField("String[]", "RED_CERTIFICATE_PINS", buildConfigStringArray(redCertificatePins))
     buildConfigField("String", "SIGNAL_CDN_URL", "\"https://cdn.red.local\"")
     buildConfigField("String", "SIGNAL_CDN2_URL", "\"https://cdn2.red.local\"")
     buildConfigField("String", "SIGNAL_CDN3_URL", "\"https://cdn3.red.local\"")
@@ -489,7 +520,7 @@ android {
 
       applicationIdSuffix = ".staging"
 
-      buildConfigField("String", "SIGNAL_URL", "\"https://chat.staging.red.local\"")
+      buildConfigField("String", "SIGNAL_URL", buildConfigString(redStagingServerUrl))
       buildConfigField("String", "STORAGE_URL", "\"https://storage-staging.red.local\"")
       buildConfigField("String", "SIGNAL_CDN_URL", "\"https://cdn-staging.red.local\"")
       buildConfigField("String", "SIGNAL_CDN2_URL", "\"https://cdn2-staging.red.local\"")

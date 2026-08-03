@@ -3,11 +3,15 @@ package com.red
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -20,6 +24,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.red.app.AuthFlow
 import com.red.core.delivery.ConnectionStatusBanner
+import com.red.core.delivery.ConnectionViewModel
 import com.red.core.security.BiometricHelper
 import com.red.feature.auth.AppLockScreen
 import com.red.feature.auth.AuthUiState
@@ -80,7 +85,9 @@ private fun RootGraph() {
     }
     state == AuthUiState.Authenticated -> MainScreen()
     state == AuthUiState.Loading -> {
-      // Show loading
+      Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+      }
     }
     else -> AuthFlow()
   }
@@ -89,12 +96,11 @@ private fun RootGraph() {
 @Composable
 private fun MainScreen() {
   val navController = rememberNavController()
+  val connectionViewModel: ConnectionViewModel = hiltViewModel()
+  val isConnected by connectionViewModel.isConnected.collectAsStateWithLifecycle()
   val items = listOf(
     Screen.Chats, Screen.Stories, Screen.Calls, Screen.Phone, Screen.Contacts, Screen.Settings
   )
-
-  // Connection status
-  var isConnected by remember { mutableStateOf(true) }
 
   Scaffold(
     bottomBar = {
@@ -117,7 +123,7 @@ private fun MainScreen() {
       ConnectionStatusBanner(
         isConnected = isConnected,
         isReconnecting = false,
-        onRetry = { /* Trigger reconnect */ }
+        onRetry = connectionViewModel::retry
       )
 
       NavHost(navController, startDestination = Screen.Chats.route) {

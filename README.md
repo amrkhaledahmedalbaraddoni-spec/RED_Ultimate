@@ -39,6 +39,9 @@ Build the merged APK from the repository root:
 
 ```bash
 ./gradlew :Signal-Android:assemblePlayProdDebug
+
+# Optional local/QA endpoint overrides (do not hard-code these in source)
+./gradlew -Pred.server.url=https://your-red-host -Pred.dumin.ip=10.0.2.2 :Signal-Android:assemblePlayProdDebug
 ```
 
 The RED surface is available from the Signal app settings under **RED Ultimate**; it does not

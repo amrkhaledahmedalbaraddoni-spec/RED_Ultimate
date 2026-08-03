@@ -13,10 +13,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import org.thoughtcrime.securesms.calls.new.NewCallActivity
 
 /**
- * Video call screen — placeholder for WebRTC-based video calling.
- * Shows a local/remote video view and call controls.
+ * RED call surface backed by Signal's existing RingRTC/WebRTC call engine.
+ * The RED user ID is displayed here; the secure Signal recipient picker performs the actual call
+ * setup so RED does not ship a second, incomplete WebRTC stack.
  */
 @Composable
 fun VideoCallScreen(
@@ -26,13 +29,14 @@ fun VideoCallScreen(
     var isMuted by remember { mutableStateOf(false) }
     var isCameraOff by remember { mutableStateOf(false) }
     var isSpeakerOn by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0D0D0D))
     ) {
-        // Remote video placeholder
+        // The actual remote video is rendered by Signal's RingRTC call activity after selection.
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -61,10 +65,16 @@ fun VideoCallScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "Connecting…",
+                    "Secure Signal calling is ready",
                     color = Color(0xFF4CAF50),
                     fontSize = 16.sp
                 )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = { context.startActivity(NewCallActivity.createIntent(context)) }) {
+                    Icon(Icons.Default.Call, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Choose secure video call")
+                }
             }
         }
 

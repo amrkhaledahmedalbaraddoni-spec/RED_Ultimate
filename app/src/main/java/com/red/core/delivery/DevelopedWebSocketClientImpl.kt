@@ -1,5 +1,6 @@
 package com.red.core.delivery
 
+import android.net.Uri
 import android.util.Log
 import org.thoughtcrime.securesms.BuildConfig
 import com.squareup.moshi.JsonAdapter
@@ -35,6 +36,7 @@ class DevelopedWebSocketClientImpl @Inject constructor(
 
   private var webSocket: WebSocket? = null
   private var listener: DevelopedWebSocketClient.Listener? = null
+  private var connectionListener: ((Boolean) -> Unit)? = null
   private val running = AtomicBoolean(false)
   private var attempt = 0
 
@@ -64,11 +66,12 @@ class DevelopedWebSocketClientImpl @Inject constructor(
 
   private fun openSocket() {
     val request = Request.Builder()
-      .url("$wsUrl/ws/chat?token=${identity.token}")
+      .url("$wsUrl/ws/chat?token=${Uri.encode(identity.token)}")
       .build()
     webSocket = client.newWebSocket(request, object : WebSocketListener() {
       override fun onOpen(webSocket: WebSocket, response: Response) {
         attempt = 0
+        connectionListener?.invoke(true)
         Log.d("RED_WS", "WebSocket connected")
       }
 
@@ -86,11 +89,13 @@ class DevelopedWebSocketClientImpl @Inject constructor(
       }
 
       override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+        connectionListener?.invoke(false)
         Log.d("RED_WS", "WebSocket closed: $code $reason")
         scheduleReconnect()
       }
 
       override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+        connectionListener?.invoke(false)
         Log.e("RED_WS", "WebSocket failure: ${t.message}")
         scheduleReconnect()
       }
@@ -142,8 +147,13 @@ class DevelopedWebSocketClientImpl @Inject constructor(
     this.listener = listener
   }
 
+  override fun setConnectionListener(listener: (Boolean) -> Unit) {
+    connectionListener = listener
+  }
+
   override fun close() {
     running.set(false)
+    connectionListener?.invoke(false)
     webSocket?.close(1000, "client closed")
   }
 

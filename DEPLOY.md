@@ -76,6 +76,9 @@ Redis is configured with:
 ```bash
 # The Signal and RED features are now one Android application module.
 ./gradlew :Signal-Android:assemblePlayProdDebug
+
+# Optional QA/local endpoint overrides
+./gradlew -Pred.server.url=https://your-red-host -Pred.dumin.ip=10.0.2.2 :Signal-Android:assemblePlayProdDebug
 ```
 
 ### On Windows (Arabic locale)

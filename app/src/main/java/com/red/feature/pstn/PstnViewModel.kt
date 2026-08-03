@@ -25,7 +25,7 @@ class PstnViewModel @Inject constructor(
             _callState.value = PstnCallState.Dialing(number)
             try {
                 // Step 1: Request Asterisk/Dumin to start GSM call
-                val response = duminApi.startCall(PstnCallRequest(number, "192.168.1.100")) // Local Dumin IP
+                val response = duminApi.startCall(PstnCallRequest(number))
                 if (response.isSuccessful) {
                     currentCallId = response.body()?.callId
                     startPollingStatus(number)

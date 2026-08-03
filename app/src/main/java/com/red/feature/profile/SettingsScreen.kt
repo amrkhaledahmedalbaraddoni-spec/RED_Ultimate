@@ -1,5 +1,8 @@
 package com.red.feature.profile
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,10 +14,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.red.feature.auth.AuthViewModel
+import com.red.feature.block.BlockListScreen
 
 /**
  * Full settings screen with profile editing, notification preferences,
@@ -26,16 +31,23 @@ fun SettingsScreen(
     authViewModel: AuthViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val profile by settingsViewModel.profile.collectAsState()
     val notificationEnabled by settingsViewModel.notificationsEnabled.collectAsState()
     val readReceiptsEnabled by settingsViewModel.readReceiptsEnabled.collectAsState()
     val lastSeenEnabled by settingsViewModel.lastSeenEnabled.collectAsState()
-    val showEditProfile by remember { mutableStateOf(false) }
+    var showEditProfile by remember { mutableStateOf(false) }
     var showChangePassword by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
+    var showTwoFactorInfo by remember { mutableStateOf(false) }
     var showBlockList by remember { mutableStateOf(false) }
     var showStorage by remember { mutableStateOf(false) }
     var showQRCode by remember { mutableStateOf(false) }
+
+    if (showBlockList) {
+        BlockListScreen(onBack = { showBlockList = false })
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -49,7 +61,7 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
-                .clickable { showEditProfile.also { /* navigate to edit */ } },
+                .clickable { showEditProfile = true },
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             )
@@ -92,7 +104,7 @@ fun SettingsScreen(
                     }
                 }
                 Column {
-                    IconButton(onClick = { /* showEditProfile = true */ }) {
+                    IconButton(onClick = { showEditProfile = true }) {
                         Icon(Icons.Default.Edit, "Edit Profile")
                     }
                     IconButton(onClick = { showQRCode = true }) {
@@ -108,7 +120,7 @@ fun SettingsScreen(
                 icon = Icons.Default.Person,
                 title = "Edit Profile",
                 subtitle = "Change your name, phone number",
-                onClick = { /* showEditProfile = true */ }
+                onClick = { showEditProfile = true }
             )
             SettingsItem(
                 icon = Icons.Default.Lock,
@@ -119,8 +131,8 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Default.Security,
                 title = "Two-Factor Authentication",
-                subtitle = "Not enabled",
-                onClick = { /* 2FA requires server-side TOTP setup — placeholder for future */ }
+                subtitle = "Server setup required",
+                onClick = { showTwoFactorInfo = true }
             )
             SettingsItem(
                 icon = Icons.Default.QrCode2,
@@ -226,7 +238,10 @@ fun SettingsScreen(
                 icon = Icons.Default.Delete,
                 title = "Clear Cache",
                 subtitle = "Free up storage space",
-                onClick = { /* Cache clearing — requires context.cacheDir.deleteRecursively() */ }
+                onClick = {
+                    context.cacheDir.deleteRecursively()
+                    context.externalCacheDir?.deleteRecursively()
+                }
             )
         }
 
@@ -242,13 +257,13 @@ fun SettingsScreen(
                 icon = Icons.Default.Description,
                 title = "Terms of Service",
                 subtitle = "View terms",
-                onClick = { /* Terms of Service — requires WebView or external browser */ }
+                onClick = { openExternalUrl(context, "${org.thoughtcrime.securesms.BuildConfig.SIGNAL_URL}/terms") }
             )
             SettingsItem(
                 icon = Icons.Default.PrivacyTip,
                 title = "Privacy Policy",
                 subtitle = "View policy",
-                onClick = { /* Privacy Policy — requires WebView or external browser */ }
+                onClick = { openExternalUrl(context, "${org.thoughtcrime.securesms.BuildConfig.SIGNAL_URL}/privacy") }
             )
             SettingsItem(
                 icon = Icons.Default.Update,
@@ -276,6 +291,19 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(32.dp))
     }
 
+    // Edit profile dialog
+    if (showEditProfile) {
+        ProfileEditDialog(
+            initialName = profile.fullName,
+            initialPhone = profile.phoneNumber,
+            onDismiss = { showEditProfile = false },
+            onSave = { name, phone ->
+                settingsViewModel.updateProfile(name, phone)
+                showEditProfile = false
+            }
+        )
+    }
+
     // Change Password Dialog
     if (showChangePassword) {
         ChangePasswordDialog(
@@ -292,6 +320,15 @@ fun SettingsScreen(
         AboutDialog(onDismiss = { showAbout = false })
     }
 
+    if (showTwoFactorInfo) {
+        AlertDialog(
+            onDismissRequest = { showTwoFactorInfo = false },
+            title = { Text("Two-Factor Authentication") },
+            text = { Text("Two-factor authentication is not enabled on the RED backend yet. It cannot be activated locally because that would not protect your account.") },
+            confirmButton = { TextButton(onClick = { showTwoFactorInfo = false }) { Text("OK") } }
+        )
+    }
+
     // Storage Info Dialog
     if (showStorage) {
         StorageInfoDialog(onDismiss = { showStorage = false })
@@ -304,6 +341,12 @@ fun SettingsScreen(
             userName = profile.fullName,
             onBack = { showQRCode = false }
         )
+    }
+}
+
+private fun openExternalUrl(context: Context, url: String) {
+    runCatching {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
 }
 
@@ -375,6 +418,48 @@ private fun SettingsToggle(
 }
 
 @Composable
+private fun ProfileEditDialog(
+    initialName: String,
+    initialPhone: String,
+    onDismiss: () -> Unit,
+    onSave: (String, String) -> Unit
+) {
+    var name by remember(initialName) { mutableStateOf(initialName) }
+    var phone by remember(initialPhone) { mutableStateOf(initialPhone) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Profile") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Full name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    label = { Text("Phone number") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(name.trim(), phone.trim()) },
+                enabled = name.trim().length >= 2
+            ) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@Composable
 private fun ChangePasswordDialog(
     onDismiss: () -> Unit,
     onChange: (String, String) -> Unit
@@ -423,8 +508,8 @@ private fun ChangePasswordDialog(
                 onClick = {
                     if (newPassword != confirmPassword) {
                         error = "Passwords don't match"
-                    } else if (newPassword.length < 6) {
-                        error = "Password must be at least 6 characters"
+                    } else if (newPassword.length < 8) {
+                        error = "Password must be at least 8 characters"
                     } else {
                         onChange(currentPassword, newPassword)
                     }

@@ -6,6 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -23,6 +24,7 @@ class MessageDeliveryManager @Inject constructor(
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
   private val sendLock = Mutex()
   private val connected = MutableStateFlow(false)
+  val connectionState: StateFlow<Boolean> = connected
   private val frameAdapter = moshi.adapter(ChatFrame::class.java)
   private val ackAdapter = moshi.adapter(MessageAck::class.java)
   private val typingAdapter = moshi.adapter(TypingFrame::class.java)
@@ -30,7 +32,13 @@ class MessageDeliveryManager @Inject constructor(
 
   fun start() {
     client.setListener { raw -> scope.launch { handleFrame(raw) } }
+    client.setConnectionListener { isConnected -> connected.value = isConnected }
     client.connect()
+  }
+
+  fun stop() {
+    client.close()
+    connected.value = false
   }
 
   fun sendMessage(conversationId: String, receiverId: String, encryptedPayload: String) {

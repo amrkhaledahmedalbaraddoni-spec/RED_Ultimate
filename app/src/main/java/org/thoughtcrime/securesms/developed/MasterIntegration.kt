@@ -46,6 +46,11 @@ object MasterIntegration {
       .edit().putString(KEY_TOKEN, token).apply()
   }
 
+  fun clearApproval(context: Context) {
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+      .edit().remove(KEY_APPROVED).remove(KEY_TOKEN).apply()
+  }
+
   /**
    * Server-backed approval verification. Makes a real API call to /api/auth/status
    * and updates the local flag accordingly. Runs on a background thread.

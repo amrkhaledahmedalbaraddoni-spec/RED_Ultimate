@@ -1,6 +1,7 @@
 package com.red.feature.pstn
 
 import com.squareup.moshi.JsonClass
+import org.thoughtcrime.securesms.BuildConfig
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -11,7 +12,7 @@ import retrofit2.http.Query
 @JsonClass(generateAdapter = true)
 data class PstnCallRequest(
   val number: String,
-  val duminIp: String = "192.168.1.100"
+  val duminIp: String = BuildConfig.RED_DUMIN_IP
 )
 
 @JsonClass(generateAdapter = true)
