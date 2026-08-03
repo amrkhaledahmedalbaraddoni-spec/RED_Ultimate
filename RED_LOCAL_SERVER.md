@@ -55,7 +55,13 @@ red.dumin.enabled=false
 
 ## تفعيل Dumin لاحقًا
 
-لا تفعل ذلك إلا بعد توفر Gateway محلي قابل للوصول:
+لا تفعل ذلك إلا بعد توفر Gateway محلي قابل للوصول. خدمة Asterisk لا تعمل افتراضيًا:
+
+```bash
+docker compose --profile dumin up -d pstn-gateway
+```
+
+ثم ابنِ التطبيق مع إعداد Dumin:
 
 ```properties
 red.dumin.enabled=true

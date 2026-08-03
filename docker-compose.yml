@@ -66,6 +66,7 @@ services:
 
   # 4. PSTN gateway: Asterisk for Dumin/GSM (System B)
   pstn-gateway:
+    profiles: ["dumin"]
     image: andrius/asterisk
     container_name: red-pstn-gateway
     restart: always

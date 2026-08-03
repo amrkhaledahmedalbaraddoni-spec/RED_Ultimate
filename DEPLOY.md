@@ -96,9 +96,10 @@ reachable from the device:
   :Signal-Android:assemblePlayProdDebug
 ```
 
-Enable Dumin only when a local gateway actually exists:
+Enable Dumin only when a local gateway actually exists. The Asterisk container is optional:
 
 ```bash
+docker compose --profile dumin up -d pstn-gateway
 ./gradlew \
   -Pred.server.url=http://192.168.1.50:8080 \
   -Pred.dumin.enabled=true \
