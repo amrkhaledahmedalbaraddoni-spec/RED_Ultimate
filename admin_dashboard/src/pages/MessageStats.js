@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Tag, Button, Space, Input, Card, Modal, Descriptions, message, Tooltip, Row, Col, Statistic, Progress } from 'antd';
-import { SearchOutlined, MessageOutlined, UserOutlined, TeamOutlined, ClockCircleOutlined, BarChartOutlined, LineChartOutlined, GlobalOutlined } from '@ant-design/icons';
+import { Card, Row, Col, Statistic, Progress, Button } from 'antd';
+import {
+  MessageOutlined, UserOutlined, TeamOutlined, ClockCircleOutlined,
+  BarChartOutlined, LineChartOutlined, GlobalOutlined
+} from '@ant-design/icons';
 
 /**
  * Message Statistics page — shows message analytics and trends.

@@ -14,7 +14,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.red.core.models.PublicUserDto
 
 /**
  * Search screen — search across messages, users, and groups.
@@ -25,14 +24,20 @@ fun MessageSearchScreen(
     onBack: () -> Unit = {},
     onChatWith: (String, String) -> Unit = { _, _ -> },
     onGroupClick: (String) -> Unit = {},
-    chatApi: ChatApi = hiltViewModel<ChatListViewModel>().let { TODO("Inject via ViewModel") }
+    viewModel: SearchViewModel = hiltViewModel()
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var messages by remember { mutableStateOf<List<StoredMessageDto>>(emptyList()) }
-    var users by remember { mutableStateOf<List<UserSearchResultDto>>(emptyList()) }
-    var groups by remember { mutableStateOf<List<GroupSearchResultDto>>(emptyList()) }
-    var isSearching by remember { mutableStateOf(false) }
+    val messages by viewModel.messages.collectAsStateWithLifecycle()
+    val users by viewModel.users.collectAsStateWithLifecycle()
+    val groups by viewModel.groups.collectAsStateWithLifecycle()
+    val isSearching by viewModel.isSearching.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableIntStateOf(0) }
+
+    // Debounce search
+    LaunchedEffect(searchQuery) {
+        kotlinx.coroutines.delay(300)
+        viewModel.search(searchQuery)
+    }
 
     Scaffold(
         topBar = {
@@ -96,7 +101,6 @@ fun MessageSearchScreen(
             } else {
                 when (selectedTab) {
                     0 -> {
-                        // Messages tab
                         if (messages.isEmpty() && searchQuery.isNotEmpty()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text("No messages found", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -113,11 +117,7 @@ fun MessageSearchScreen(
                                         Icon(Icons.Default.Message, "Message", tint = MaterialTheme.colorScheme.primary)
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                message.senderId,
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                fontWeight = FontWeight.Medium
-                                            )
+                                            Text(message.senderId, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                                             Text(
                                                 message.payload.take(80) + if (message.payload.length > 80) "…" else "",
                                                 style = MaterialTheme.typography.bodyMedium,
@@ -131,7 +131,6 @@ fun MessageSearchScreen(
                         }
                     }
                     1 -> {
-                        // Users tab
                         if (users.isEmpty() && searchQuery.isNotEmpty()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text("No users found", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -159,7 +158,6 @@ fun MessageSearchScreen(
                         }
                     }
                     2 -> {
-                        // Groups tab
                         if (groups.isEmpty() && searchQuery.isNotEmpty()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text("No groups found", color = MaterialTheme.colorScheme.onSurfaceVariant)

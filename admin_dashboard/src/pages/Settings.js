@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Card, Form, Input, Switch, Button, Space, Divider, message, Row, Col,
-  Typography, Tabs, InputNumber, Select, Alert, Tag, Tooltip
+  Card, Form, Input, Switch, Button, Space, message, Row, Col,
+  Typography, Tabs, InputNumber, Select, Alert
 } from 'antd';
 import {
   SettingOutlined, SafetyCertificateOutlined, BellOutlined,
-  CloudServerOutlined, MailOutlined, LockOutlined, GlobalOutlined,
+  CloudServerOutlined, GlobalOutlined,
   SaveOutlined, ReloadOutlined, ApiOutlined
 } from '@ant-design/icons';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { Option } = Select;
 
 /**

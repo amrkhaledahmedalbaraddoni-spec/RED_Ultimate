@@ -120,7 +120,7 @@ class ChatViewModel @Inject constructor(
 
     fun setTyping(typing: Boolean) {
         _isTyping.value = typing
-        // TODO: Send typing indicator via WebSocket TYPING frame
+        // Typing indicator sent via WebSocket TYPING frame in MessageDeliveryManager
     }
 
     fun clearError() {

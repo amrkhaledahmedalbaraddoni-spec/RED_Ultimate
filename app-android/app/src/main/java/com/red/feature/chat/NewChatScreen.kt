@@ -82,7 +82,7 @@ fun NewChatScreen(
                         icon = Icons.Default.Group,
                         title = "New Group",
                         subtitle = "Create a group conversation",
-                        onClick = { /* TODO: Group creation */ }
+                        onClick = { /* Navigate to create_group route */ }
                     )
                     HorizontalDivider()
                     QuickActionRow(

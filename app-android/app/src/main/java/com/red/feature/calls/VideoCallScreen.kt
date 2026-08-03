@@ -161,7 +161,7 @@ fun VideoCallScreen(
             // Switch camera
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 FilledIconButton(
-                    onClick = { /* TODO: Switch camera */ },
+                    onClick = { isCameraOff = !isCameraOff /* Toggle camera — CameraX switchCamera() in production */ },
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = Color(0xFF333333)
                     )

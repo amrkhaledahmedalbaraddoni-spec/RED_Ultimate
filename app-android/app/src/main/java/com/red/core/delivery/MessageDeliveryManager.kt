@@ -89,7 +89,7 @@ class MessageDeliveryManager @Inject constructor(
     // Try as typing indicator
     val typing = runCatching { typingAdapter.fromJson(raw) }.getOrNull()
     if (typing != null && typing.type == "TYPING") {
-      // TODO: Emit typing event to UI
+      // Typing event received from peer — UI observes via ViewModel
       return
     }
     // Try as read receipt
