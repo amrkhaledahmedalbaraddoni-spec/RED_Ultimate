@@ -206,6 +206,18 @@ private fun MessageContextMenu(
         title = { Text("Message Actions") },
         text = {
             Column {
+                // Quick reaction row
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    for (emoji in listOf("👍", "❤️", "😂", "😮", "😢", "🙏")) {
+                        TextButton(onClick = { /* Add reaction via ReactionApi */ }) {
+                            Text(emoji, fontSize = 24.sp)
+                        }
+                    }
+                }
+                HorizontalDivider()
                 TextButton(onClick = onCopy) {
                     Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -252,6 +264,30 @@ fun MessageBubble(msg: MessageEntity, myUserId: String, onLongPress: () -> Unit 
                 .background(color, RoundedCornerShape(12.dp))
                 .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
+            // Message type indicator for non-text
+            if (msg.type != "TEXT") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        when (msg.type) {
+                            "IMAGE" -> Icons.Default.Image
+                            "VIDEO" -> Icons.Default.Videocam
+                            "FILE" -> Icons.Default.InsertDriveFile
+                            "VOICE" -> Icons.Default.Mic
+                            else -> Icons.Default.Message
+                        },
+                        null,
+                        modifier = Modifier.size(16.dp),
+                        tint = textColor.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        msg.type,
+                        fontSize = 10.sp,
+                        color = textColor.copy(alpha = 0.7f)
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+            }
             Text(msg.payload, color = textColor, fontSize = 15.sp)
             Row(
                 modifier = Modifier.align(Alignment.End),

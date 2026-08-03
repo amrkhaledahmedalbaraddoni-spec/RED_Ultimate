@@ -246,6 +246,13 @@ private fun MainScreen() {
             onGroupClick = { groupId -> navController.navigate("group_detail/$groupId") }
           )
         }
+
+        // Status update
+        composable("status_update") {
+          com.red.feature.chat.StatusUpdateScreen(
+            onBack = { navController.popBackStack() }
+          )
+        }
       }
     }
   }

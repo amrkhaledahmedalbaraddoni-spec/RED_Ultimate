@@ -9,8 +9,11 @@ import com.red.feature.chat.ChatApi
 import com.red.feature.chat.ContactApi
 import com.red.feature.chat.BlockApi
 import com.red.feature.chat.ChatMetaApi
+import com.red.feature.chat.DisappearingMessageApi
 import com.red.feature.chat.GroupApi
 import com.red.feature.chat.NotificationApi
+import com.red.feature.chat.ReactionApi
+import com.red.feature.chat.UserStatusApi
 import com.red.feature.pstn.DuminApi
 import com.red.feature.stories.StoryApi
 import com.squareup.moshi.Moshi
@@ -108,6 +111,18 @@ object NetworkModule {
   @Provides
   @Singleton
   fun provideChatMetaApi(retrofit: Retrofit): ChatMetaApi = retrofit.create(ChatMetaApi::class.java)
+
+  @Provides
+  @Singleton
+  fun provideReactionApi(retrofit: Retrofit): ReactionApi = retrofit.create(ReactionApi::class.java)
+
+  @Provides
+  @Singleton
+  fun provideDisappearingMessageApi(retrofit: Retrofit): DisappearingMessageApi = retrofit.create(DisappearingMessageApi::class.java)
+
+  @Provides
+  @Singleton
+  fun provideUserStatusApi(retrofit: Retrofit): UserStatusApi = retrofit.create(UserStatusApi::class.java)
 }
 
 @Module
