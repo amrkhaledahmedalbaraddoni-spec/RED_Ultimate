@@ -31,6 +31,8 @@ interface MessageRepository : MongoRepository<MessageDocument, String> {
   ): List<MessageDocument>
 
   fun countByTimestampGreaterThan(threshold: Long): Long
+
+  fun countByReceiverIdAndTimestampGreaterThan(receiverId: String, threshold: Long): Long
 }
 
 @Document(collection = "stories")

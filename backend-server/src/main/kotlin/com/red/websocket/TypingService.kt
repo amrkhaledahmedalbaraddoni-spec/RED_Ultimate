@@ -1,8 +1,7 @@
 package com.red.websocket
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.red.delivery.MessageAck
-import com.red.delivery.AckStatus
+import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.stereotype.Service
 
 /**
@@ -13,7 +12,7 @@ import org.springframework.stereotype.Service
 @Service
 class TypingService(
   private val presence: PresenceService,
-  private val redis: org.springframework.data.redis.core.StringRedisTemplate,
+  private val redis: StringRedisTemplate,
   private val mapper: ObjectMapper
 ) {
 
@@ -26,13 +25,23 @@ class TypingService(
     )
     val json = mapper.writeValueAsString(payload)
 
-    // Find the peer in this conversation and send if online
-    // We need to look up who the peer is - for now we publish to Redis
-    // The ChatWebSocketHandler will handle local delivery
+    // Publish to Redis for cross-instance fan-out
     redis.convertAndSend("chat:typing:$conversationId", json)
+
+    // Also deliver locally to any online peer
+    val peerIds = findConversationPeers(conversationId, senderId)
+    for (peerId in peerIds) {
+      val session = presence.sessionFor(peerId)
+      if (session != null && session.isOpen) {
+        runCatching {
+          session.sendMessage(org.springframework.web.socket.TextMessage(json))
+        }
+      }
+    }
   }
 
-  private fun org.springframework.data.redis.core.StringRedisTemplate.convertAndSend(channel: String, message: String) {
-    this.convertAndSend(channel, message)
+  private fun findConversationPeers(conversationId: String, excludeUserId: String): List<String> {
+    val parts = conversationId.split(":")
+    return parts.filter { it != excludeUserId }
   }
 }

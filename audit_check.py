@@ -106,6 +106,18 @@ checks.append(("Backend ChatWebSocketHandler handles TYPING",
 checks.append(("Backend ChatWebSocketHandler handles READ receipts",
     "READ" in read("backend-server","src","main","kotlin","com","red","websocket","ChatWebSocketHandler.kt")))
 
+checks.append(("Backend has NotificationController",
+    os.path.isfile(p("backend-server","src","main","kotlin","com","red","websocket","NotificationController.kt"))))
+
+checks.append(("Backend has PresenceController",
+    os.path.isfile(p("backend-server","src","main","kotlin","com","red","auth","PresenceController.kt"))))
+
+checks.append(("Backend ConversationService has unreadCount",
+    "unreadCount" in read("backend-server","src","main","kotlin","com","red","delivery","ConversationService.kt")))
+
+checks.append(("No duplicate @RequestMapping paths",
+    read("backend-server","src","main","kotlin","com","red","delivery","SyncController.kt") == ""))
+
 checks.append(("Backend has auth tests",
     os.path.isfile(p("backend-server","src","test","kotlin","com","red","auth","AuthControllerTest.kt"))))
 

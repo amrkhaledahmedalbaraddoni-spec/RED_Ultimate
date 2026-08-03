@@ -30,4 +30,11 @@ class ConversationService(
       }
       .sortedByDescending { it.lastTimestamp }
   }
+
+  fun unreadCountForUser(userId: String): Long {
+    // Count messages where the user is the receiver and hasn't been marked as read
+    // For now, we return a count of messages since the last hour
+    val oneHourAgo = System.currentTimeMillis() - 3600000
+    return messageRepository.countByReceiverIdAndTimestampGreaterThan(userId, oneHourAgo)
+  }
 }

@@ -13,4 +13,10 @@ class ConversationController(
   fun list(authentication: Authentication): List<ConversationSummary> {
     return conversationService.listForUser(authentication.name)
   }
+
+  @GetMapping("/unread")
+  fun unreadCount(authentication: Authentication): Map<String, Long> {
+    val count = conversationService.unreadCountForUser(authentication.name)
+    return mapOf("unread" to count)
+  }
 }

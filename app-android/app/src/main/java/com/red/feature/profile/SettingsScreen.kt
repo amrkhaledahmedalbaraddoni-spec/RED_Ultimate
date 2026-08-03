@@ -1,5 +1,6 @@
 package com.red.feature.profile
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -384,5 +385,3 @@ private fun AboutDialog(onDismiss: () -> Unit) {
         }
     )
 }
-
-import androidx.compose.foundation.clickable

@@ -65,7 +65,7 @@ class AuthController(
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("error" to "Invalid credentials"))
     }
     attemptLimiter.clear(limiterKey)
-    val token = jwtService.generateToken(user.id, user.role.name)
+    val token = jwtService.issue(user.id, user.email, user.role)
     return ResponseEntity.ok(AuthResponse(token, UserView.from(user)))
   }
 

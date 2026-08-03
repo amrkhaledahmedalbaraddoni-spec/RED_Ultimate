@@ -13,8 +13,10 @@ import javax.inject.Inject
 data class ConversationItem(
     val conversationId: String,
     val peerName: String,
+    val peerId: String,
     val lastTimestamp: Long,
-    val messageCount: Long
+    val messageCount: Long,
+    val isOnline: Boolean = false
 )
 
 @HiltViewModel
@@ -32,9 +34,20 @@ class ChatListViewModel @Inject constructor(
     private val _searchResults = MutableStateFlow<List<PublicUserDto>>(emptyList())
     val searchResults: StateFlow<List<PublicUserDto>> = _searchResults
 
+    private val _onlineUsers = MutableStateFlow<Set<String>>(emptySet())
+    val onlineUsers: StateFlow<Set<String>> = _onlineUsers
+
     fun load() {
         viewModelScope.launch {
             _loading.value = true
+            try {
+                // Load online users
+                val onlineResponse = chatApi.getOnlineUsers()
+                if (onlineResponse.isSuccessful) {
+                    _onlineUsers.value = onlineResponse.body()?.map { it.userId }?.toSet() ?: emptySet()
+                }
+            } catch (_: Exception) { }
+
             try {
                 val response = chatApi.conversations()
                 if (response.isSuccessful) {
@@ -43,7 +56,14 @@ class ChatListViewModel @Inject constructor(
                         val peerName = try {
                             chatApi.user(dto.peerId).body()?.fullName ?: dto.peerId
                         } catch (_: Exception) { dto.peerId }
-                        ConversationItem(dto.conversationId, peerName, dto.lastTimestamp, dto.messageCount)
+                        ConversationItem(
+                            conversationId = dto.conversationId,
+                            peerName = peerName,
+                            peerId = dto.peerId,
+                            lastTimestamp = dto.lastTimestamp,
+                            messageCount = dto.messageCount,
+                            isOnline = _onlineUsers.value.contains(dto.peerId)
+                        )
                     }
                     _conversations.value = items
                 }

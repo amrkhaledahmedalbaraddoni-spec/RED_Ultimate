@@ -54,4 +54,8 @@ class MessageService(
       .map { StoredMessage.from(it) }
 
   fun countSince(threshold: Long): Long = messageRepository.countByTimestampGreaterThan(threshold)
+
+  fun findMessageById(id: String): MessageDocument? = messageRepository.findById(id).orElse(null)
+
+  fun deleteMessage(id: String) = messageRepository.deleteById(id)
 }

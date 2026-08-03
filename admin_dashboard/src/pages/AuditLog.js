@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Tag, Button, Space, DatePicker, Input, Card } from 'antd';
+import { Table, Tag, Button, Space, Input, Card } from 'antd';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
-
-const { RangePicker } = DatePicker;
 
 /**
  * Audit Log page — shows security-relevant events from the backend.

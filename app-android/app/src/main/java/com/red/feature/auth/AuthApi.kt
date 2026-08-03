@@ -2,7 +2,6 @@ package com.red.feature.auth
 
 import com.red.core.models.AuthResponse
 import com.red.core.models.StatusResponse
-import com.red.core.models.User
 import com.red.core.models.UserView
 import retrofit2.Response
 import retrofit2.http.*
