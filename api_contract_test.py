@@ -28,13 +28,13 @@ for ctrl in backend_dir.rglob("*Controller.kt"):
     ctrl_name = ctrl.stem
     
     # Extract individual method mappings
-    for match in re.finditer(r'@(Get|Post|Put|Delete|Patch)Mapping\(?(?:"([^"]*)")?\)', content):
+    for match in re.finditer(r'@(Get|Post|Put|Delete|Patch)Mapping(?:\("([^"]*)"\)|\(\))?', content):
         method = match.group(1).upper()
         path = match.group(2) or ""
         full_path = f"{base}{path}"
         # Normalize path variables
         normalized = re.sub(r'\{[^}]+\}', '{param}', full_path)
-        key = f"{method} {normalized.lstrip(/)}"
+        key = f"{method} {normalized.lstrip('/')}"
         backend_endpoints[key] = ctrl_name
 
 print(f"\nBackend endpoints found: {len(backend_endpoints)}")
@@ -55,7 +55,7 @@ for api_file in app_dir.rglob("*Api.kt"):
         path = match.group(2)
         # Normalize path variables
         normalized = re.sub(r'\{[^}]+\}', '{param}', path)
-        key = f"{method} {normalized.lstrip(/)}"
+        key = f"{method} {normalized.lstrip('/')}"
         android_calls[key] = iface_name
 
 print(f"\nAndroid API calls found: {len(android_calls)}")
