@@ -127,81 +127,91 @@ checks.append(("Backend has security tests",
 checks.append(("Backend has message service tests",
     os.path.isfile(p("backend-server","src","test","kotlin","com","red","delivery","MessageServiceTest.kt"))))
 
-# ── 3. App-android ──────────────────────────────────────────────────────────
-checks.append(("app-android has build.gradle.kts",
-    os.path.isfile(p("app-android","app","build.gradle.kts"))))
+# ── 3. Merged RED features in :app ─────────────────────────────────────────
+checks.append(("No standalone app-android project remains",
+    not os.path.exists(p("app-android"))))
+checks.append(("No second android project remains",
+    not os.path.exists(p("android"))))
+checks.append(("Backend is wired as a composite build",
+    'includeBuild("backend-server")' in read("settings.gradle.kts")))
+checks.append(("The main app has one explicit stable application ID",
+    'applicationId = "org.thoughtcrime.securesms"' in read("app","build.gradle.kts")))
+checks.append(("RED feature activity is part of the main manifest",
+    "com.red.MainActivity" in read("app","src","main","AndroidManifest.xml")))
+checks.append(("merged :app has build.gradle.kts",
+    os.path.isfile(p("app","build.gradle.kts"))))
 
-checks.append(("app-android has AndroidManifest.xml",
-    os.path.isfile(p("app-android","app","src","main","AndroidManifest.xml"))))
+checks.append(("merged :app has AndroidManifest.xml",
+    os.path.isfile(p("app","src","main","AndroidManifest.xml"))))
 
-checks.append(("app-android has RedApplication (@HiltAndroidApp)",
-    "@HiltAndroidApp" in read("app-android","app","src","main","java","com","red","RedApplication.kt")))
+checks.append(("root ApplicationContext owns Hilt (@HiltAndroidApp)",
+    "@HiltAndroidApp" in read("app","src","main","java","org","thoughtcrime","securesms","ApplicationContext.java")))
 
-checks.append(("app-android has real UUID v7",
-    "0x7000" in read("app-android","app","src","main","java","com","red","core","delivery","UuidV7.kt")))
+checks.append(("merged RED app has real UUID v7",
+    "0x7000" in read("app","src","main","java","com","red","core","delivery","UuidV7.kt")))
 
 checks.append(("MessageDeliveryManager handles inbound frames",
-    "handleFrame" in read("app-android","app","src","main","java","com","red","core","delivery","MessageDeliveryManager.kt")))
+    "handleFrame" in read("app","src","main","java","com","red","core","delivery","MessageDeliveryManager.kt")))
 
 checks.append(("TokenStore exists for session persistence",
-    os.path.isfile(p("app-android","app","src","main","java","com","red","core","auth","TokenStore.kt"))))
+    os.path.isfile(p("app","src","main","java","com","red","core","auth","TokenStore.kt"))))
 
 checks.append(("NetworkModule has auth interceptor",
-    "authInterceptor" in read("app-android","app","src","main","java","com","red","core","di","NetworkModule.kt")))
+    "authInterceptor" in read("app","src","main","java","com","red","core","di","NetworkModule.kt")))
 
 checks.append(("ChatApi exists for real conversations",
-    os.path.isfile(p("app-android","app","src","main","java","com","red","feature","chat","ChatApi.kt"))))
+    os.path.isfile(p("app","src","main","java","com","red","feature","chat","ChatApi.kt"))))
 
 checks.append(("ChatListViewModel exists",
-    os.path.isfile(p("app-android","app","src","main","java","com","red","feature","chat","ChatListViewModel.kt"))))
+    os.path.isfile(p("app","src","main","java","com","red","feature","chat","ChatListViewModel.kt"))))
 
 checks.append(("ChatListScreen uses hiltViewModel",
-    "hiltViewModel()" in read("app-android","app","src","main","java","com","red","feature","chat","ChatListScreen.kt")))
+    "hiltViewModel()" in read("app","src","main","java","com","red","feature","chat","ChatListScreen.kt")))
 
 checks.append(("ChatApi has user search",
-    "searchUsers" in read("app-android","app","src","main","java","com","red","feature","chat","ChatApi.kt")))
+    "searchUsers" in read("app","src","main","java","com","red","feature","chat","ChatApi.kt")))
 
 checks.append(("StoryApi exists",
-    os.path.isfile(p("app-android","app","src","main","java","com","red","feature","stories","StoryApi.kt"))))
+    os.path.isfile(p("app","src","main","java","com","red","feature","stories","StoryApi.kt"))))
 
 checks.append(("StoryViewModel exists",
-    os.path.isfile(p("app-android","app","src","main","java","com","red","feature","stories","StoryViewModel.kt"))))
+    os.path.isfile(p("app","src","main","java","com","red","feature","stories","StoryViewModel.kt"))))
 
 checks.append(("StoryListScreen is reactive",
-    "StoryViewModel" in read("app-android","app","src","main","java","com","red","feature","stories","StoryListScreen.kt")))
+    "StoryViewModel" in read("app","src","main","java","com","red","feature","stories","StoryListScreen.kt")))
 
 checks.append(("StoryListScreen is clickable",
-    "clickable" in read("app-android","app","src","main","java","com","red","feature","stories","StoryListScreen.kt")))
+    "clickable" in read("app","src","main","java","com","red","feature","stories","StoryListScreen.kt")))
 
 checks.append(("DuminApi exists",
-    os.path.isfile(p("app-android","app","src","main","java","com","red","feature","pstn","DuminApi.kt"))))
+    os.path.isfile(p("app","src","main","java","com","red","feature","pstn","DuminApi.kt"))))
 
 checks.append(("CallLogScreen is not a placeholder",
-    "CallLogViewModel" in read("app-android","app","src","main","java","com","red","feature","calls","CallLogScreen.kt")))
+    "CallLogViewModel" in read("app","src","main","java","com","red","feature","calls","CallLogScreen.kt")))
 
 checks.append(("CallLogViewModel exists",
-    os.path.isfile(p("app-android","app","src","main","java","com","red","feature","calls","CallLogViewModel.kt"))))
+    os.path.isfile(p("app","src","main","java","com","red","feature","calls","CallLogViewModel.kt"))))
 
 checks.append(("SettingsScreen has edit profile",
-    "Edit Profile" in read("app-android","app","src","main","java","com","red","feature","profile","SettingsScreen.kt")))
+    "Edit Profile" in read("app","src","main","java","com","red","feature","profile","SettingsScreen.kt")))
 
 checks.append(("SettingsViewModel exists",
-    os.path.isfile(p("app-android","app","src","main","java","com","red","feature","profile","SettingsViewModel.kt"))))
+    os.path.isfile(p("app","src","main","java","com","red","feature","profile","SettingsViewModel.kt"))))
 
 checks.append(("AuthApi has profile endpoints",
-    "getMyProfile" in read("app-android","app","src","main","java","com","red","feature","auth","AuthApi.kt")))
+    "getMyProfile" in read("app","src","main","java","com","red","feature","auth","AuthApi.kt")))
 
 checks.append(("AuthApi has change-password",
-    "changePassword" in read("app-android","app","src","main","java","com","red","feature","auth","AuthApi.kt")))
+    "changePassword" in read("app","src","main","java","com","red","feature","auth","AuthApi.kt")))
 
-checks.append(("UserView model exists in app-android",
-    "data class UserView" in read("app-android","app","src","main","java","com","red","core","models","Models.kt")))
+checks.append(("UserView model exists in merged :app",
+    "data class UserView" in read("app","src","main","java","com","red","core","models","Models.kt")))
 
 checks.append(("ChatDetailScreen has typing indicator",
-    "isTyping" in read("app-android","app","src","main","java","com","red","feature","chat","ChatDetailScreen.kt")))
+    "isTyping" in read("app","src","main","java","com","red","feature","chat","ChatDetailScreen.kt")))
 
 checks.append(("ChatViewModel has typing state",
-    "isTyping" in read("app-android","app","src","main","java","com","red","feature","chat","ChatViewModel.kt")))
+    "isTyping" in read("app","src","main","java","com","red","feature","chat","ChatViewModel.kt")))
 
 # ── 4. Infrastructure ──────────────────────────────────────────────────────
 checks.append(("docker-compose.yml exists and is valid",
@@ -232,8 +242,8 @@ checks.append(("build-windows.bat exists",
     os.path.isfile(p("build-windows.bat"))))
 
 # ── 5. Security ────────────────────────────────────────────────────────────
-checks.append(("DevelopedServerConfig has USE_TLS flag",
-    "USE_TLS" in read("app","src","main","java","org","thoughtcrime","securesms","dependencies","DevelopedServerConfig.java")))
+checks.append(("DevelopedServerConfig uses generated secure endpoint configuration",
+    "BuildConfig.RED_SERVER_URL" in read("app","src","main","java","org","thoughtcrime","securesms","dependencies","DevelopedServerConfig.java")))
 
 checks.append(("No hardcoded http:// default URL",
     'LOCAL_IP = "http' not in read("app","src","main","java","org","thoughtcrime","securesms","dependencies","DevelopedServerConfig.java")))

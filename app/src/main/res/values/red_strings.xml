@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Resources owned by the merged RED feature surface. The app_name resource remains the
+         canonical Signal launcher name; use red_app_name for RED-specific labels. -->
+    <string name="red_app_name">RED</string>
+    <string name="red_app_name_full">RED Ultimate</string>
+    <string name="red_channel_messages">Messages</string>
+    <string name="red_channel_calls">Calls</string>
+    <string name="red_channel_stories">Stories</string>
+    <string name="red_notification_new_message">New message</string>
+    <string name="red_notification_incoming_call">Incoming call</string>
+    <string name="red_notification_new_story">New story</string>
+    <string name="red_permission_camera_required">Camera permission is required to capture photos</string>
+    <string name="red_permission_microphone_required">Microphone permission is required to record voice messages</string>
+    <string name="red_permission_contacts_required">Contacts permission is required to find friends</string>
+    <string name="red_permission_notifications_required">Notification permission is required to receive message alerts</string>
+    <string name="red_error_network">Network error. Please check your connection.</string>
+    <string name="red_error_auth">Authentication failed. Please try again.</string>
+    <string name="red_error_generic">Something went wrong. Please try again.</string>
+</resources>

@@ -3,9 +3,9 @@ FROM gradle:8.10.2-jdk21 AS build
 WORKDIR /app
 COPY settings.gradle.kts build.gradle.kts ./
 # Download dependencies first for better layer caching
-RUN gradle --no-daemon dependencies --quiet || true
+RUN gradle --no-daemon dependencies --quiet
 COPY src ./src
-RUN gradle --no-daemon bootJar -x test
+RUN gradle --no-daemon test bootJar
 
 # ---- Runtime stage ----
 FROM eclipse-temurin:21-jre-jammy

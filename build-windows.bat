@@ -12,9 +12,17 @@ echo   RED Ultimate - Windows Build Script
 echo  ========================================
 echo.
 
+REM Prefer Android Studio's bundled JDK 21 when JAVA_HOME is not already configured.
+if not defined JAVA_HOME if exist "%ProgramFiles%\Android\Android Studio\jbr\bin\java.exe" set "JAVA_HOME=%ProgramFiles%\Android\Android Studio\jbr"
+if not defined JAVA_HOME (
+    echo ERROR: JAVA_HOME is not set and Android Studio's JDK was not found.
+    echo Install JDK 21 and set JAVA_HOME before running this script.
+    exit /b 1
+)
+
 REM Force English locale for the JVM (prevents Arabic-Indic digits
 REM like ٣٦٠ in resource directory names like values-sw360dp)
-set JAVA_TOOL_OPTIONS=-Duser.language=en -Duser.country=US
+set JAVA_TOOL_OPTIONS=-Duser.language=en -Duser.country=US -Duser.variant= -Dfile.encoding=UTF-8
 
 echo [1/3] Setting locale to English (prevents Arabic-Indic digit issues)...
 echo       JAVA_TOOL_OPTIONS=%JAVA_TOOL_OPTIONS%

@@ -71,7 +71,7 @@ print("\n" + "="*60)
 print("2. ANDROID APP")
 print("="*60)
 
-app_dir = ROOT / "app-android" / "app" / "src" / "main" / "java" / "com" / "red"
+app_dir = ROOT / "app" / "src" / "main" / "java" / "com" / "red"
 
 # Count all Kotlin files
 kt_files = list(app_dir.rglob("*.kt"))
@@ -340,7 +340,7 @@ if main_activity.exists():
     # Check all routes
     required_routes = [
         "chats", "stories", "calls", "phone", "contacts", "settings",
-        "chat_detail/{chatId}", "pstn_call/{number}", "video_call/{peerName}",
+        "chat_detail/{chatId}/{peerId}", "pstn_call/{number}", "video_call/{peerName}",
         "story_capture", "story_viewer/{urls}", "new_chat", "create_group",
         "profile/{userId}", "block_list", "notifications", "media_gallery/{conversationId}",
         "qr_code"
@@ -355,7 +355,7 @@ print("\n" + "="*60)
 print("8. TESTS")
 print("="*60)
 
-test_dir = ROOT / "app-android" / "app" / "src" / "test"
+test_dir = ROOT / "app" / "src" / "test"
 test_files = list(test_dir.rglob("*Test.kt"))
 check(len(test_files) >= 4, f"Test files: {len(test_files)} (>= 4)")
 
@@ -379,9 +379,9 @@ sfu_file = ROOT / "media-sfu" / "server.js"
 check(sfu_file.exists(), "media-sfu/server.js exists")
 
 # Check build files
-check((ROOT / "app-android" / "app" / "build.gradle.kts").exists(), "app-android build.gradle.kts exists")
-check((ROOT / "app-android" / "app" / "proguard-rules.pro").exists(), "proguard-rules.pro exists")
-check((ROOT / "app-android" / "app" / "src" / "main" / "AndroidManifest.xml").exists(), "AndroidManifest.xml exists")
+check((ROOT / "app" / "build.gradle.kts").exists(), "merged :app build.gradle.kts exists")
+check((ROOT / "app" / "src" / "main" / "proguard" / "proguard-red.pro").exists(), "merged RED proguard rules exist")
+check((ROOT / "app" / "src" / "main" / "AndroidManifest.xml").exists(), "merged AndroidManifest.xml exists")
 
 # ═══════════════════════════════════════════════════════════════
 # 10. SECURITY
@@ -396,8 +396,8 @@ check((app_dir / "core" / "security" / "BiometricHelper.kt").exists(), "Biometri
 check((app_dir / "core" / "security" / "SessionManager.kt").exists(), "Session manager exists")
 
 # Check network security config
-ns_config = ROOT / "app-android" / "app" / "src" / "main" / "res" / "xml" / "network_security_config.xml"
-check(ns_config.exists(), "Network security config exists")
+network_module = ROOT / "app" / "src" / "main" / "java" / "com" / "red" / "core" / "di" / "NetworkModule.kt"
+check(network_module.exists() and "BuildConfig.RED_SERVER_URL" in network_module.read_text(), "Merged RED network uses the canonical local RED endpoint")
 
 # Check no hardcoded secrets
 for kt_file in app_dir.rglob("*.kt"):

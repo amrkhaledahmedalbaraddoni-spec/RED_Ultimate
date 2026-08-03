@@ -9,7 +9,9 @@ plugins {
   alias(libs.plugins.android.application) apply false
   alias(libs.plugins.jetbrains.kotlin.android) apply false
   alias(libs.plugins.jetbrains.kotlin.jvm) apply false
+  alias(libs.plugins.jetbrains.kotlin.kapt) apply false
   alias(libs.plugins.compose.compiler) apply false
+  alias(libs.plugins.hilt) apply false
   alias(libs.plugins.ktlint)
   alias(benchmarkLibs.plugins.baselineprofile) apply false
 //  id("dependency-verification")
@@ -60,6 +62,18 @@ subprojects {
   tasks.withType<Test>().configureEach {
     maxParallelForks = (Runtime.getRuntime().availableProcessors() / 4).coerceAtLeast(1)
   }
+}
+
+tasks.register("backendBuild") {
+  group = "Build"
+  description = "Builds the local Spring Boot backend composite build."
+  dependsOn(gradle.includedBuild("backend-server").task(":build"))
+}
+
+tasks.register("buildAll") {
+  group = "Build"
+  description = "Builds the single Android application and the local backend service."
+  dependsOn(":Signal-Android:assemblePlayProdDebug", "backendBuild")
 }
 
 tasks.register("buildQa") {

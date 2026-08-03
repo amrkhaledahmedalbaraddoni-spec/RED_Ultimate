@@ -10,7 +10,8 @@ from pathlib import Path
 from collections import defaultdict
 
 ROOT = Path("/home/user/RED_Ultimate")
-app_dir = ROOT / "app-android" / "app" / "src" / "main" / "java" / "com" / "red"
+# RED APIs are compiled as part of the single root :app module.
+app_dir = ROOT / "app" / "src" / "main" / "java" / "com" / "red"
 backend_dir = ROOT / "backend-server" / "src" / "main" / "kotlin"
 
 print("="*60)

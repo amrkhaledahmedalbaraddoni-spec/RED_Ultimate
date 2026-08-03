@@ -86,7 +86,7 @@
 ## [1.0.0] — 2026-08-03
 
 ### Initial Release
-- Standalone Gradle Compose app (Hilt, Room, Retrofit/Moshi)
+- RED Compose feature set merged into the single Signal Android application (Hilt, Room, Retrofit/Moshi)
 - Auth flow with admin-approval states
 - Chat (Room-backed store, WebSocket delivery with ACK + retry)
 - Stories (capture/viewer, 24h cleanup)

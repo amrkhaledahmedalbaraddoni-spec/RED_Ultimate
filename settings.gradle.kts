@@ -39,6 +39,14 @@ pluginManagement {
   }
   includeBuild("build-logic")
 }
+
+// The backend is a separate JVM service, not a second Android application. Include it as a
+// composite build so the root checkout exposes one `buildAll` entry point without mixing its
+// Spring/Kotlin classpath into the Android project.
+includeBuild("backend-server") {
+  name = "backend-server"
+}
+
 dependencyResolutionManagement {
   repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
   repositories {

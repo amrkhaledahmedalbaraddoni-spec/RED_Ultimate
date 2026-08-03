@@ -1,8 +1,10 @@
 RED Production Checklist (v2.0 — comprehensive)
 ============================================================
 
-Component: [app-android]  (standalone Gradle Compose app)
-- [x] Real Gradle build (settings/build.gradle.kts, manifest, Hilt, Room, Retrofit/Moshi)
+Component: [app]  (single Signal + RED Android application)
+- [x] RED Compose feature set merged into the root Signal Gradle application
+- [x] One launcher/application process; no standalone app-android project remains
+- [x] Hilt, Room, Retrofit/Moshi and WorkManager are configured in :app
 - [x] Auth flow with admin-approval states (pending/rejected/banned)
 - [x] Chat (Room-backed store, WebSocket delivery manager with ACK + retry)
 - [x] Chat search (user search by name/email)
@@ -26,7 +28,7 @@ Component: [app-android]  (standalone Gradle Compose app)
 - [x] Message reply/quote (reply to specific message)
 - [x] Message search (search across messages, users, groups)
 - [x] User status/emoji status (set, get, clear)
-- [x] Configurable server URL (BuildConfig.SERVER_URL)
+- [x] Configurable server URL (canonical BuildConfig.SIGNAL_URL)
 - [x] All DTOs have @JsonClass annotations
 
 Component: [backend-server]  (Spring Boot 3.4)
@@ -117,7 +119,7 @@ Component: [verification]
 - [x] Admin dashboard: builds successfully (0 warnings)
 - [x] media-sfu: server.js syntax verified
 - [x] Deep code analysis: no duplicate mappings, no missing annotations
-- [x] All API endpoints verified against app-android API calls
+- [x] All API endpoints verified against the merged app API calls
 - [x] All DTOs have @JsonClass (including ProfileInfo)
 - [x] Integration test: 247/247 checks passed
 - [x] Wire javaInterop set to false for Kotlin 2.2.20 compatibility

@@ -72,10 +72,39 @@ Redis is configured with:
 
 ## Building the Android App
 
+The RED backend is local-first. Dumin/PSTN is disabled by default and does not need to be
+running. Start the backend locally with Docker, then point the Android build at it.
+
+For an Android Emulator, the host machine is `10.0.2.2`:
+
 ### On Linux/macOS
 ```bash
-cd app-android
-./gradlew assembleDebug
+docker compose up -d --build
+curl http://127.0.0.1:8080/actuator/health
+
+# The Signal and RED features are now one Android application module.
+./gradlew :Signal-Android:assemblePlayProdDebug
+```
+
+For a physical device, replace `10.0.2.2` with the computer's LAN IP and make sure port 8080 is
+reachable from the device:
+
+```bash
+./gradlew \
+  -Pred.server.url=http://192.168.1.50:8080 \
+  -Pred.dumin.enabled=false \
+  :Signal-Android:assemblePlayProdDebug
+```
+
+Enable Dumin only when a local gateway actually exists. The Asterisk container is optional:
+
+```bash
+docker compose --profile dumin up -d pstn-gateway
+./gradlew \
+  -Pred.server.url=http://192.168.1.50:8080 \
+  -Pred.dumin.enabled=true \
+  -Pred.dumin.ip=192.168.1.100 \
+  :Signal-Android:assemblePlayProdDebug
 ```
 
 ### On Windows (Arabic locale)
@@ -84,7 +113,7 @@ build-windows.bat
 ```
 
 This script:
-1. Sets `JAVA_TOOL_OPTIONS=-Duser.language=en -Duser.country=US` to prevent Arabic-Indic digits
+1. Sets `JAVA_TOOL_OPTIONS=-Duser.language=en -Duser.country=US -Dfile.encoding=UTF-8` to prevent Arabic-Indic digits and generated-source encoding corruption
 2. Runs `gradlew clean` to remove stale generated code
 3. Runs `gradlew assemblePlayProdDebug`
 

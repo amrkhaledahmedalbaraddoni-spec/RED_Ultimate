@@ -20,6 +20,8 @@ plugins {
   alias(libs.plugins.ktlint)
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlinx.serialization)
+  alias(libs.plugins.jetbrains.kotlin.kapt)
+  alias(libs.plugins.hilt)
   alias(testLibs.plugins.compose.screenshot)
   alias(benchmarkLibs.plugins.baselineprofile)
   id("androidx.navigation.safeargs")
@@ -60,6 +62,40 @@ val localProperties: Properties? = if (localPropertiesFile.exists()) {
 }
 val quickstartCredentialsDir: String? = localProperties?.getProperty("quickstart.credentials.dir")
 val benchmarkBackupFile: String? = localProperties?.getProperty("benchmark.backup.file")
+
+// RED endpoints are configurable without editing source code. This keeps the production
+// defaults safe while allowing a local backend/Dumin gateway to be selected with either
+// Gradle properties (-Pred.server.url=...) or root local.properties entries.
+fun redProperty(name: String): String? =
+  providers.gradleProperty(name).orNull ?: localProperties?.getProperty(name)
+
+val redServerUrlOverride = redProperty("red.server.url")
+  ?.trim()
+  ?.takeIf { it.isNotEmpty() }
+val redServerUrl = redServerUrlOverride ?: "http://10.0.2.2:8080"
+val redStagingServerUrl = redServerUrlOverride ?: "http://10.0.2.2:8080"
+val redDuminEnabled = redProperty("red.dumin.enabled")
+  ?.toBooleanStrictOrNull()
+  ?: false
+val redDuminIp = redProperty("red.dumin.ip")
+  ?.trim()
+  ?.takeIf { it.matches(Regex("^[A-Za-z0-9.:-]+$")) }
+  ?: "127.0.0.1"
+val redDuminGatewayUrl = redProperty("red.dumin.gateway.url")
+  ?.trim()
+  ?.takeIf { it.isNotEmpty() }
+  ?: "http://$redDuminIp:5060"
+val redCertificatePins = redProperty("red.certificate.pins")
+  ?.split(",")
+  ?.map { it.trim() }
+  ?.filter { it.startsWith("sha256/") }
+  ?: emptyList()
+
+fun buildConfigString(value: String): String =
+  "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+
+fun buildConfigStringArray(values: List<String>): String =
+  "new String[]{${values.joinToString(",") { buildConfigString(it) }}}"
 
 val isInstrumentationTestRun = gradle.startParameter.taskNames.any { taskName ->
   val lower = taskName.lowercase()
@@ -242,6 +278,10 @@ android {
   }
 
   defaultConfig {
+    // One stable production identity. RED is a feature surface inside this APK; it is not a
+    // second application with a competing com.red.sovereign ID.
+    applicationId = "org.thoughtcrime.securesms"
+
     if (currentHotfixVersion >= maxHotfixVersions) {
       throw AssertionError("Hotfix version offset is too large!")
     }
@@ -259,11 +299,17 @@ android {
     project.ext.set("archivesBaseName", "Signal")
 
     manifestPlaceholders["mapsKey"] = "AIzaSyCSx9xea86GwDKGznCAULE9Y5a8b-TfN9U"
+    manifestPlaceholders["redUsesCleartextTraffic"] = redServerUrl.startsWith("http://")
 
     buildConfigField("long", "BUILD_TIMESTAMP", getLastCommitTimestamp() + "L")
     buildConfigField("String", "GIT_HASH", "\"${getGitHash()}\"")
-    buildConfigField("String", "SIGNAL_URL", "\"https://chat.red.local\"")
+    buildConfigField("String", "SIGNAL_URL", buildConfigString(redServerUrl))
     buildConfigField("String", "STORAGE_URL", "\"https://storage.red.local\"")
+    buildConfigField("String", "RED_SERVER_URL", buildConfigString(redServerUrl))
+    buildConfigField("boolean", "RED_DUMIN_ENABLED", redDuminEnabled.toString())
+    buildConfigField("String", "RED_DUMIN_IP", buildConfigString(redDuminIp))
+    buildConfigField("String", "RED_DUMIN_GATEWAY_URL", buildConfigString(redDuminGatewayUrl))
+    buildConfigField("String[]", "RED_CERTIFICATE_PINS", buildConfigStringArray(redCertificatePins))
     buildConfigField("String", "SIGNAL_CDN_URL", "\"https://cdn.red.local\"")
     buildConfigField("String", "SIGNAL_CDN2_URL", "\"https://cdn2.red.local\"")
     buildConfigField("String", "SIGNAL_CDN3_URL", "\"https://cdn3.red.local\"")
@@ -358,6 +404,7 @@ android {
         "proguard/proguard-okhttp.pro",
         "proguard/proguard-ez-vcard.pro",
         "proguard/proguard-dnsjava.pro",
+        "proguard/proguard-red.pro",
         "proguard/proguard.cfg"
       )
       testProguardFiles(
@@ -486,7 +533,8 @@ android {
 
       applicationIdSuffix = ".staging"
 
-      buildConfigField("String", "SIGNAL_URL", "\"https://chat.staging.red.local\"")
+      buildConfigField("String", "SIGNAL_URL", buildConfigString(redStagingServerUrl))
+      buildConfigField("String", "RED_SERVER_URL", buildConfigString(redStagingServerUrl))
       buildConfigField("String", "STORAGE_URL", "\"https://storage-staging.red.local\"")
       buildConfigField("String", "SIGNAL_CDN_URL", "\"https://cdn-staging.red.local\"")
       buildConfigField("String", "SIGNAL_CDN2_URL", "\"https://cdn2-staging.red.local\"")
@@ -679,7 +727,34 @@ kotlin {
   }
 }
 
+kapt {
+  correctErrorTypes = true
+}
+
 dependencies {
+  // RED's Compose/Hilt/Room feature set is compiled into this application module.
+  // It is deliberately not a second Android application or a separate Gradle build.
+  implementation(platform(libs.androidx.compose.bom))
+  implementation(libs.androidx.compose.material3)
+  implementation(libs.androidx.compose.material.icons.extended)
+  implementation(libs.hilt.android)
+  implementation(libs.hilt.navigation.compose)
+  implementation(libs.hilt.work)
+  implementation(libs.room.runtime)
+  implementation(libs.room.ktx)
+  implementation(libs.retrofit)
+  implementation(libs.retrofit.converter.moshi)
+  implementation(libs.moshi)
+  implementation(libs.moshi.kotlin)
+  implementation(libs.okhttp)
+  implementation(libs.okhttp.logging)
+  implementation(libs.work.runtime.ktx)
+  implementation(libs.coil.compose)
+
+  kapt(libs.hilt.compiler)
+  kapt(libs.hilt.androidx.compiler)
+  kapt(libs.room.compiler)
+
   lintChecks(project(":lintchecks"))
   ktlintRuleset(libs.ktlint.twitter.compose)
   coreLibraryDesugaring(libs.android.tools.desugar)

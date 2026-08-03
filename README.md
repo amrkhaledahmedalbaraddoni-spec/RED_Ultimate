@@ -30,9 +30,35 @@ Interested in helping translate Signal? Contribute here:
 
 https://community.signalusers.org/c/translation-feedback/
 
+## Android application
+
+The repository ships **one Android application only**: the root `:app` module. It contains the
+Signal client and the merged RED Compose features (`com.red`). The previous standalone `app-android` project and the unfinished `android/` experiment were removed after their buildable RED features were merged.
+
+Build the merged APK from the repository root:
+
+```bash
+./gradlew :Signal-Android:assemblePlayProdDebug
+
+# Build Android and the local Spring Boot backend together
+./gradlew buildAll
+
+# Local server (Android Emulator -> host machine)
+./gradlew -Pred.server.url=http://10.0.2.2:8080 -Pred.dumin.enabled=false :Signal-Android:assemblePlayProdDebug
+
+# Physical device example (replace with the server computer's LAN IP)
+./gradlew -Pred.server.url=http://192.168.1.50:8080 -Pred.dumin.enabled=false :Signal-Android:assemblePlayProdDebug
+```
+
+The RED surface is available from the Signal app settings under **RED Ultimate**; it does not
+create a second launcher icon or a second application ID. For local-server setup, see
+[`RED_LOCAL_SERVER.md`](RED_LOCAL_SERVER.md). To run the complete verification pipeline on a
+machine with JDK, Node.js, Python, and Docker installed, use `scripts/verify-all.sh` or
+`verify-all.bat`.
+
 ## Contributing Code
 
-If you're new to the Signal codebase, we recommend going through our issues and picking out a simple bug to fix in order to get yourself familiar. Also please have a look at the [CONTRIBUTING.md](https://github.com/signalapp/Signal-Android/blob/main/CONTRIBUTING.md), that might answer some of your questions.
+If you're new to the Signal codebase, we recommend going through our issues and picking out a simple bug to fix in order to get yourself familiar. Also please have a look at the [CONTRIBUTING.md](https://github.com/signalapp/Signal-Android/blob/main/CONTRIBUTING.md), that might answer your questions.
 
 For larger changes and feature ideas, we ask that you propose it on the [unofficial Community Forum](https://community.signalusers.org) for a high-level discussion with the wider community before implementation.
 

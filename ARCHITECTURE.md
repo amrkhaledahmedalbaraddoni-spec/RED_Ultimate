@@ -16,8 +16,8 @@ fork with four custom sub-systems:
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │  Android App     │────▶│  RED Backend     │────▶│  PostgreSQL     │
-│  (Signal fork +  │WS   │  (Spring Boot)   │     │  (users)        │
-│   app-android)   │     │                  │────▶│  MongoDB        │
+│  (Signal + RED   │WS   │  (Spring Boot)   │     │  (users)        │
+│   in :app)       │     │                  │────▶│  MongoDB        │
 └─────────────────┘     │                  │     │  (messages,      │
                         │                  │     │   stories,       │
 ┌─────────────────┐     │                  │     │   blocks,        │
@@ -168,8 +168,8 @@ fork with four custom sub-systems:
 # Backend
 cd backend-server && gradle bootJar
 
-# Android
-cd app-android && gradle :app:assembleDebug
+# Android (the single merged application)
+./gradlew :Signal-Android:assemblePlayProdDebug
 
 # Windows (Arabic locale)
 build-windows.bat
