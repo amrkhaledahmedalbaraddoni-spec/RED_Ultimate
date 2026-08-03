@@ -1,5 +1,6 @@
 package com.red.core.di
 
+import org.thoughtcrime.securesms.BuildConfig
 import com.red.core.auth.TokenStore
 import com.red.core.delivery.ClientIdentity
 import com.red.core.delivery.DevelopedWebSocketClient
@@ -37,7 +38,9 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-  private const val BASE_URL = BuildConfig.SERVER_URL.ifBlank { "http://192.168.1.50:8080/" }
+  // Use the same RED endpoint as the Signal client. Keeping one source of truth avoids
+  // shipping a second hard-coded LAN endpoint in the merged application.
+  private val BASE_URL = BuildConfig.SIGNAL_URL.trimEnd('/') + "/"
 
   @Provides
   @Singleton

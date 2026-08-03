@@ -74,8 +74,8 @@ Redis is configured with:
 
 ### On Linux/macOS
 ```bash
-cd app-android
-./gradlew assembleDebug
+# The Signal and RED features are now one Android application module.
+./gradlew :Signal-Android:assemblePlayProdDebug
 ```
 
 ### On Windows (Arabic locale)

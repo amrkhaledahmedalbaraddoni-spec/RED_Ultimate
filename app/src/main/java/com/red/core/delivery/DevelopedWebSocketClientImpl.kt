@@ -1,8 +1,11 @@
 package com.red.core.delivery
 
 import android.util.Log
+import org.thoughtcrime.securesms.BuildConfig
 import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -35,7 +38,9 @@ class DevelopedWebSocketClientImpl @Inject constructor(
   private val running = AtomicBoolean(false)
   private var attempt = 0
 
-  private val moshi: Moshi = Moshi.Builder().build()
+  private val moshi: Moshi = Moshi.Builder()
+    .add(KotlinJsonAdapterFactory())
+    .build()
   private val frameAdapter: JsonAdapter<ChatFrame> = moshi.adapter(ChatFrame::class.java)
   private val ackAdapter: JsonAdapter<MessageAck> = moshi.adapter(MessageAck::class.java)
   private val typingAdapter: JsonAdapter<TypingFrame> = moshi.adapter(TypingFrame::class.java)
@@ -47,7 +52,10 @@ class DevelopedWebSocketClientImpl @Inject constructor(
     .retryOnConnectionFailure(true)
     .build()
 
-  var wsUrl: String = "ws://192.168.1.50:8080"
+  var wsUrl: String = BuildConfig.SIGNAL_URL
+    .trimEnd('/')
+    .replaceFirst("https://", "wss://")
+    .replaceFirst("http://", "ws://")
 
   override fun connect() {
     if (!running.compareAndSet(false, true)) return

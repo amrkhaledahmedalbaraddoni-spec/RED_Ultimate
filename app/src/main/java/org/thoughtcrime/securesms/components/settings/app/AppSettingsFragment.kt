@@ -304,6 +304,18 @@ private fun AppSettingsContent(
           )
         }
 
+        item {
+          val context = LocalContext.current
+          Rows.TextRow(
+            text = "RED Ultimate",
+            icon = painterResource(R.drawable.symbol_flash_24),
+            onClick = {
+              context.startActivity(com.red.MainActivity.intent(context))
+            },
+            enabled = isRegisteredAndUpToDate
+          )
+        }
+
         if (state.isPrimaryDevice) {
           item {
             Rows.TextRow(

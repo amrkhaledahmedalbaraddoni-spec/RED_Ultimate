@@ -48,6 +48,13 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+  companion object {
+    /** Opens the merged RED surface without creating another launcher application. */
+    @JvmStatic
+    fun intent(context: android.content.Context): android.content.Intent =
+      android.content.Intent(context, MainActivity::class.java)
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContent { REDTheme { RootGraph() } }

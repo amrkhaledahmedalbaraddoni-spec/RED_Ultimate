@@ -20,6 +20,8 @@ plugins {
   alias(libs.plugins.ktlint)
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlinx.serialization)
+  alias(libs.plugins.jetbrains.kotlin.kapt)
+  alias(libs.plugins.hilt)
   alias(testLibs.plugins.compose.screenshot)
   alias(benchmarkLibs.plugins.baselineprofile)
   id("androidx.navigation.safeargs")
@@ -358,6 +360,7 @@ android {
         "proguard/proguard-okhttp.pro",
         "proguard/proguard-ez-vcard.pro",
         "proguard/proguard-dnsjava.pro",
+        "proguard/proguard-red.pro",
         "proguard/proguard.cfg"
       )
       testProguardFiles(
@@ -679,7 +682,34 @@ kotlin {
   }
 }
 
+kapt {
+  correctErrorTypes = true
+}
+
 dependencies {
+  // RED's Compose/Hilt/Room feature set is compiled into this application module.
+  // It is deliberately not a second Android application or a separate Gradle build.
+  implementation(platform(libs.androidx.compose.bom))
+  implementation(libs.androidx.compose.material3)
+  implementation(libs.androidx.compose.material.icons.extended)
+  implementation(libs.hilt.android)
+  implementation(libs.hilt.navigation.compose)
+  implementation(libs.hilt.work)
+  implementation(libs.room.runtime)
+  implementation(libs.room.ktx)
+  implementation(libs.retrofit)
+  implementation(libs.retrofit.converter.moshi)
+  implementation(libs.moshi)
+  implementation(libs.moshi.kotlin)
+  implementation(libs.okhttp)
+  implementation(libs.okhttp.logging)
+  implementation(libs.work.runtime.ktx)
+  implementation(libs.coil.compose)
+
+  kapt(libs.hilt.compiler)
+  kapt(libs.hilt.androidx.compiler)
+  kapt(libs.room.compiler)
+
   lintChecks(project(":lintchecks"))
   ktlintRuleset(libs.ktlint.twitter.compose)
   coreLibraryDesugaring(libs.android.tools.desugar)

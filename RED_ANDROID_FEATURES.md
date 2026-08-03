@@ -1,10 +1,13 @@
-# RED Ultimate — Android App — Final Report
+# RED Ultimate — Merged Android Features
+
+The RED feature surface is compiled inside the single root `:app` application. The old standalone
+`app-android` project was merged and is no longer a second Android application.
 
 ## 📊 ملخص التطوير
 
 | المقياس | القيمة |
 |---------|--------|
-| ملفات Kotlin (app-android) | 70 |
+| ملفات Kotlin (merged `app/src/main/java/com/red`) | 83 |
 | ملفات Kotlin (backend) | 44 |
 | ملفات الاختبار | 4 (18 اختبار) |
 | شاشات التطبيق | 24 |
@@ -141,8 +144,8 @@
 # على Windows:
 build-windows.bat
 
-# على Linux/Mac:
-./gradlew assemblePlayProdDebug
+# على Linux/Mac (من جذر المستودع):
+./gradlew :Signal-Android:assemblePlayProdDebug
 ```
 
 ## ⚠️ ملاحظات مهمة

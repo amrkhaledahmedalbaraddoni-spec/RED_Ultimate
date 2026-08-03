@@ -30,9 +30,24 @@ Interested in helping translate Signal? Contribute here:
 
 https://community.signalusers.org/c/translation-feedback/
 
+## Android application
+
+The repository ships **one Android application only**: the root `:app` module. It contains the
+Signal client and the merged RED Compose features (`com.red`). The previous standalone
+`app-android` project and the unfinished `android/` experiment are no longer Gradle applications.
+
+Build the merged APK from the repository root:
+
+```bash
+./gradlew :Signal-Android:assemblePlayProdDebug
+```
+
+The RED surface is available from the Signal app settings under **RED Ultimate**; it does not
+create a second launcher icon or a second application ID.
+
 ## Contributing Code
 
-If you're new to the Signal codebase, we recommend going through our issues and picking out a simple bug to fix in order to get yourself familiar. Also please have a look at the [CONTRIBUTING.md](https://github.com/signalapp/Signal-Android/blob/main/CONTRIBUTING.md), that might answer some of your questions.
+If you're new to the Signal codebase, we recommend going through our issues and picking out a simple bug to fix in order to get yourself familiar. Also please have a look at the [CONTRIBUTING.md](https://github.com/signalapp/Signal-Android/blob/main/CONTRIBUTING.md), that might answer your questions.
 
 For larger changes and feature ideas, we ask that you propose it on the [unofficial Community Forum](https://community.signalusers.org) for a high-level discussion with the wider community before implementation.
 

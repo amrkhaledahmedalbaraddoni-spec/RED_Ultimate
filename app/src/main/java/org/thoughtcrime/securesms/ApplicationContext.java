@@ -24,6 +24,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
+import androidx.hilt.work.HiltWorkerFactory;
+import androidx.work.Configuration;
 
 import com.bumptech.glide.Glide;
 import com.google.android.gms.security.ProviderInstaller;
@@ -145,6 +147,8 @@ import io.reactivex.rxjava3.exceptions.OnErrorNotImplementedException;
 import io.reactivex.rxjava3.exceptions.UndeliverableException;
 import io.reactivex.rxjava3.plugins.RxJavaPlugins;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import dagger.hilt.android.HiltAndroidApp;
+import javax.inject.Inject;
 import kotlin.Unit;
 import rxdogtag2.RxDogTag;
 
@@ -156,12 +160,24 @@ import rxdogtag2.RxDogTag;
  *
  * @author Moxie Marlinspike
  */
-public class ApplicationContext extends Application implements AppForegroundObserver.Listener {
+@HiltAndroidApp
+public class ApplicationContext extends Application implements AppForegroundObserver.Listener, Configuration.Provider {
 
   private static final String TAG = Log.tag(ApplicationContext.class);
 
+  /** Hilt bridges the merged RED workers into the existing Signal application. */
+  @Inject HiltWorkerFactory redWorkerFactory;
+  @Inject com.red.core.security.SessionManager redSessionManager;
+
   public static ApplicationContext getInstance(Context context) {
     return (ApplicationContext) context.getApplicationContext();
+  }
+
+  @Override
+  public Configuration getWorkManagerConfiguration() {
+    return new Configuration.Builder()
+        .setWorkerFactory(redWorkerFactory)
+        .build();
   }
 
   @Override
@@ -176,6 +192,10 @@ public class ApplicationContext extends Application implements AppForegroundObse
     long startTime = System.currentTimeMillis();
 
     super.onCreate();
+
+    // The RED client is merged into this application. Keep its startup hooks here rather than
+    // introducing a second Application class, so Signal and RED share one process and one APK.
+    initializeMergedRedFeatures();
 
     AppStartup.getInstance().addBlocking("sqlcipher-init", () -> {
                 SqlCipherLibraryLoader.load();
@@ -262,6 +282,18 @@ public class ApplicationContext extends Application implements AppForegroundObse
     Log.d(TAG, "onCreate() took " + (System.currentTimeMillis() - startTime) + " ms");
     SignalLocalMetrics.ColdStart.onApplicationCreateFinished();
     Tracer.getInstance().end("Application#onCreate()");
+  }
+
+  private void initializeMergedRedFeatures() {
+    try {
+      com.red.core.delivery.NotificationHelper.createChannels(this);
+      com.red.core.workers.StoryCleanupWorker.enqueue(this);
+      redSessionManager.getEncryptionKey();
+    } catch (Throwable t) {
+      // RED services must never prevent the Signal client from starting. The individual
+      // feature surfaces will retry their own initialization when opened.
+      Log.w(TAG, "Unable to initialize merged RED services", t);
+    }
   }
 
   @Override
