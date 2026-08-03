@@ -40,8 +40,8 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-  // Use the same RED endpoint as the Signal client. Keeping one source of truth avoids
-  // shipping a second hard-coded LAN endpoint in the merged application.
+  // RED has its own local REST/WebSocket endpoint. Keeping it in BuildConfig avoids
+  // shipping a hard-coded LAN address and avoids redirecting Signal's native service client.
   private val BASE_URL = BuildConfig.RED_SERVER_URL.trimEnd('/') + "/"
   private val SERVER_HOST = requireNotNull(URI(BASE_URL).host) {
     "RED server URL must contain a valid host: $BASE_URL"
