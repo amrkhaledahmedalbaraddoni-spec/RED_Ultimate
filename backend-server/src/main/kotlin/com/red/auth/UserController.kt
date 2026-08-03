@@ -30,7 +30,8 @@ class UserController(
 
   data class UpdateProfileRequest(
     val fullName: String?,
-    val phoneNumber: String?
+    val phoneNumber: String?,
+    val avatarUrl: String? = null
   )
 
   @PutMapping("/me")
@@ -40,6 +41,17 @@ class UserController(
     }
     req.fullName?.let { if (it.isNotBlank()) user.fullName = it }
     req.phoneNumber?.let { user.phoneNumber = it }
+    return UserView.from(userRepository.save(user))
+  }
+
+  @PutMapping("/me/profile")
+  fun updateMyProfileTyped(authentication: Authentication, @RequestBody req: UpdateProfileRequest): UserView {
+    val user = userRepository.findById(authentication.name).orElseThrow {
+      ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
+    }
+    req.fullName?.let { if (it.isNotBlank()) user.fullName = it }
+    req.phoneNumber?.let { user.phoneNumber = it }
+    req.avatarUrl?.let { user.avatarUrl = it }
     return UserView.from(userRepository.save(user))
   }
 

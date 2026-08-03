@@ -92,4 +92,11 @@ class AuthController(
     userRepository.save(user)
     return ResponseEntity.ok(mapOf("message" to "Password changed successfully"))
   }
+
+  @DeleteMapping("/account")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  fun deleteAccount(authentication: Authentication) {
+    val user = userRepository.findById(authentication.name).orElse(null) ?: return
+    userRepository.delete(user)
+  }
 }

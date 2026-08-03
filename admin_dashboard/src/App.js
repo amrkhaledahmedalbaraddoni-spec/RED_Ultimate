@@ -64,6 +64,7 @@ const App = () => {
             <Route path="/diagnostics" element={<Diagnostics />} />
             <Route path="/dumin" element={<DuminMonitor />} />
             <Route path="/audit" element={<AuditLog />} />
+            <Route path="/settings" element={<div style={{padding:24,color:'#fff'}}>Settings — Coming Soon</div>} />
           </Routes>
         </Content>
       </Layout>
